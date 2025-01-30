@@ -1,0 +1,46 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+
+public class Menu : MonoBehaviour
+{
+    [SerializeField] private SettingsWindow settingsWindow;
+    //[SerializeField] private GameObject loadingScreen;
+    [SerializeField] private GameObject startGameOptions;
+    //[SerializeField] private Slider slider;
+
+    [SerializeField] private Button buttonStart;
+    [SerializeField] private Button buttonSettings;
+    [SerializeField] private Button buttonAbout;
+    [SerializeField] private Button buttonExit;
+
+    private void Awake()
+    {
+        buttonStart.onClick.AddListener(PLayClick);
+        buttonSettings.onClick.AddListener(SettingsClick);
+        buttonAbout.onClick.AddListener(AboutClick);
+        buttonExit.onClick.AddListener(Exit);
+    }
+
+    public void PLayClick()
+    {
+        startGameOptions.SetActive(true);
+    }
+
+    public void AboutClick()
+    {
+
+    }
+
+    public void SettingsClick()
+    {
+        settingsWindow.OpenWindow(settingsWindow);
+    }
+
+    public void Exit()
+    {
+        Application.Quit(); 
+    }
+}
