@@ -11,7 +11,7 @@ public class ControllerPlayer : MonoBehaviour
     public List<Player> players = new List<Player>(); // Список всех игроков
 
     public static ControllerPlayer Instance;
-    private int[] choicePlayers = new int[] { 0 };//
+    private int[] choicePlayers = new int[] { 5,0,1,2,7 };//
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
     private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
@@ -23,95 +23,89 @@ public class ControllerPlayer : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        //createPlayersOnBoard(choicePlayers);
+        CreatePlayersOnBoard(choicePlayers);
         //indexObjectPlayer.Add(123, prefabsPlayers[0]); //
     }
     private void Start()
     {
         boardSize = boardCardPositions.Count;
         currentPlayerindex = 0;
-        CreatePlayer();
+        //CreatePlayer();
     }
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            RollDice();
-            MoveCurrentPlayer(steps);
-            //StartCoroutine(Move());
-            //FirstMoveEffect(0);
+            if (currentPlayerindex == 0 || !players[currentPlayerindex - 1].isMoving)
+            {
+                RollDice();
+                MoveCurrentPlayer(steps);
+            }
+
         }
     }
     private void RollDice()
     {
         steps = Random.Range(1, 13); //Розрахунок дальності ходу (від 1 до 12)
-        Debug.Log("Dice rolled a number " + steps);
-    }
-    public void CreatePlayer()
-    {
-        GameObject playerObject = Instantiate(prefabsPlayers[currentPlayerindex], startPositionPlayer, startRotationPlayer);
-        Player newPlayer = playerObject.AddComponent<Player>();
-
-        /*Player newPlayer = new Player();
-        newPlayer.playerID = currentPlayerindex;
-        newPlayer.playerPrefab = Instantiate(prefabsPlayers[currentPlayerindex], new Vector3(0, 0, 0), Quaternion.identity);
-        newPlayer.playerPrefab.SetActive(true);*/
-        players.Add(newPlayer);
-        Debug.Log($"Player {newPlayer.playerID} created and added.");
+        Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
     }
 
     private void MoveCurrentPlayer(int steps)
     {
-        if(players.Count == 0)
+
+        if (currentPlayerindex == 3)
         {
-            Debug.LogError("Нет игроков в списке!");
-            return;
-        }
-        if (players[currentPlayerindex] == null)
-        {
-            Debug.LogError(currentPlayerindex);
-            Debug.LogError("Текущий игрок равен null!");
-            return;
+
         }
 
-        /*Player currentPlayer = players[currentPlayerindex];
-        currentPlayer.Move(steps, boardCardPositions.Count);*/
-
+        players[currentPlayerindex].isMoving = true;
         players[currentPlayerindex].Move(steps, boardCardPositions.Count);
 
-        /*currentPlayerindex++;
-
-        if(currentPlayerindex == players.Count)
+        currentPlayerindex++;
+        if (currentPlayerindex == players.Count)
         {
             currentPlayerindex = 0;
-        }*/
+        }
+    }
+    public void CreatePlayer(GameObject playerObject, Vector3 offset, float height)
+    {
+        Player newPlayer = playerObject.AddComponent<Player>();
+        newPlayer.propertyID++;
+        newPlayer.playerOffSet = new Vector3(offset.x, height, offset.z);
+        players.Add(newPlayer);
+        Debug.Log($"Player {newPlayer.propertyID} created and added.");
     }
 
-    private void createPlayersOnBoard(int[] number)
+    private void CreatePlayersOnBoard(int[] number)
     {
         int countPlayersAir = 0;
         int countPlayersGround = 0;
 
-        Vector3 offset = new Vector3(0, 0, 0);
+        Vector3 offset;
 
         for (int i = 0; i < number.Length; i++)
         {
-            if (number[i] <= 3) //Air Players
+            GameObject playerObject;
+            if (prefabsPlayers[number[i]].CompareTag("Air"))
             {
-                offset = placementStartPlayersOnBoard(countPlayersAir);
-                Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers, startPositionPlayer.z + offset.z), startRotationPlayer);
+                offset = PlacementStartPlayersOnBoard(countPlayersAir);
+                playerObject = Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers,
+                    startPositionPlayer.z + offset.z), startRotationPlayer);
+                CreatePlayer(playerObject, offset, heightForAirPlayers);
                 countPlayersAir++;
             }
-            else //Ground PLayers
+            if(prefabsPlayers[number[i]].CompareTag("Ground"))
             {
-                offset = placementStartPlayersOnBoard(countPlayersGround);
-                Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers, startPositionPlayer.z + offset.z), startRotationPlayer);
+                offset = PlacementStartPlayersOnBoard(countPlayersGround);
+                playerObject = Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
+                    startPositionPlayer.z + offset.z), startRotationPlayer);
+                CreatePlayer(playerObject, offset, heightForGroundPlayers);
                 countPlayersGround++;
             }
         }
     }
 
-    private Vector3 placementStartPlayersOnBoard(int phase)
+    private Vector3 PlacementStartPlayersOnBoard(int phase)
     {
         float offsetBack = 3f;
         float offsetLeft = 2f;

@@ -347,7 +347,7 @@ GameObject:
   - component: {fileID: -9210224098257498270}
   m_Layer: 0
   m_Name: Monster Truck_2
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
