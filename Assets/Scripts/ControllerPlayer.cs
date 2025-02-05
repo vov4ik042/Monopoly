@@ -11,53 +11,42 @@ public class ControllerPlayer : MonoBehaviour
     public List<Player> players = new List<Player>(); // Список всех игроков
 
     public static ControllerPlayer Instance;
-    private int[] choicePlayers = new int[] { 5,0,1,2,7 };//
+    private int[] choicePlayers = new int[] { 0,1,2,3,4,5,6,7 };//
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
-    private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
+    //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
+    private Vector3 startPositionPlayer = new Vector3(16, 0, -16);
     private Quaternion startRotationPlayer = Quaternion.Euler(0, -90, 0);
     private int steps;
-    private int boardSize;
+    private float boardSize;
     private byte currentPlayerindex; //Индекс текущего игрока
 
     private void Awake()
     {
         Instance = this;
         CreatePlayersOnBoard(choicePlayers);
-        //indexObjectPlayer.Add(123, prefabsPlayers[0]); //
     }
     private void Start()
     {
         boardSize = boardCardPositions.Count;
         currentPlayerindex = 0;
-        //CreatePlayer();
     }
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (currentPlayerindex == 0 || !players[currentPlayerindex - 1].isMoving)
+            bool previousPlayer = currentPlayerindex == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerindex - 1].isMoving;
+            if (previousPlayer)
             {
-                RollDice();
-                MoveCurrentPlayer(steps);
+                steps = DiceController.Instance.startThrow();
+                Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
+                //MoveCurrentPlayer(steps);
             }
-
         }
-    }
-    private void RollDice()
-    {
-        steps = Random.Range(1, 13); //Розрахунок дальності ходу (від 1 до 12)
-        Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
     }
 
     private void MoveCurrentPlayer(int steps)
     {
-
-        if (currentPlayerindex == 3)
-        {
-
-        }
-
         players[currentPlayerindex].isMoving = true;
         players[currentPlayerindex].Move(steps, boardCardPositions.Count);
 
@@ -78,8 +67,8 @@ public class ControllerPlayer : MonoBehaviour
 
     private void CreatePlayersOnBoard(int[] number)
     {
-        int countPlayersAir = 0;
-        int countPlayersGround = 0;
+        int countPlayersAir = 1;
+        int countPlayersGround = 1;
 
         Vector3 offset;
 
@@ -107,28 +96,39 @@ public class ControllerPlayer : MonoBehaviour
 
     private Vector3 PlacementStartPlayersOnBoard(int phase)
     {
-        float offsetBack = 3f;
-        float offsetLeft = 2f;
-        Vector3 mass = new Vector3(0, 0, 0);
+
+        float offsetX = 1.3f;
+        float offsetZ = 1.3f;
+        Vector3 result = new Vector3(0, 0, 0);
+
         switch (phase)
         {
             case 1:
                 {
-                    mass.z = -offsetLeft;
+                    result.z += offsetZ;
+                    result.x -= offsetX;
                     break;
                 }
             case 2:
                 {
-                    mass.x = offsetBack; mass.z = -offsetLeft;
+                    result.z += offsetZ;
+                    result.x += offsetX;
                     break;
                 }
             case 3:
                 {
-                    mass.x = offsetBack;
+                    result.z -= offsetZ;
+                    result.x += offsetX;
+                    break;
+                }
+            case 4:
+                {
+                    result.z -= offsetZ;
+                    result.x -= offsetX;
                     break;
                 }
         }
-        return mass;
+        return result;
     }
 
     public Vector3 GetBoardPosition(int index)
