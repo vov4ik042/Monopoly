@@ -344,6 +344,7 @@ MonoBehaviour:
   - {fileID: 8264425019341452611}
   - {fileID: 2874477983701456733}
   - {fileID: 4770648552771261632}
+  dicePlate: {fileID: 0}
 --- !u!54 &1876377576515799783
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -39,7 +39,7 @@ public class ControllerPlayer : MonoBehaviour
             if (previousPlayer)
             {
                 steps = DiceController.Instance.startThrow();
-                Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
+                //Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
                 //MoveCurrentPlayer(steps);
             }
         }
