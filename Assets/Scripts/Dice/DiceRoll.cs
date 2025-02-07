@@ -10,7 +10,19 @@ public class DiceRoll : MonoBehaviour
 {
     [SerializeField] private Transform[] edges;
     [SerializeField] private GameObject dicePlate;
-    public int result { get; private set; }
+    private int _result;
+    public int result
+    {
+        get
+        {
+            return _result;
+        }
+        private set
+        {
+            _result = value;
+            DiceController.Instance.WriteResultCube();
+        }
+    }
     private Rigidbody rb;
 
     /*private void OnDrawGizmos()
@@ -76,12 +88,8 @@ public class DiceRoll : MonoBehaviour
          }
 
          Debug.Log(" targetX " + targetX + " targetY " + targetY + " targetZ " + targetZ);*/
- /*       int randomNumber = Random.Range(0, 24);
-        diceRoll.result = (randomNumber / 4) + 1;
-        Debug.Log("diceRoll.result " + diceRoll.result);
-        Vector3 target = RandomEdgeCubik(camera, randomNumber);*/
 
-        Vector3 target = RandomEdgeCubik(camera); 
+        Vector3 target = RandomEdgeCubik(camera, diceRoll); 
         Quaternion targetRotation = Quaternion.Euler(target.x, target.y, target.z);
         StartCoroutine(RotateSmooth(targetRotation));
     }
@@ -89,13 +97,13 @@ public class DiceRoll : MonoBehaviour
     private IEnumerator RotateSmooth(Quaternion targetRotation)
     {
         Quaternion startRotation = transform.rotation;
-        float duration = 0.8f; // Теперь плавнее
+        float duration = 0.8f; // Плавность
         float elapsedTime = 0f;
 
         while (elapsedTime < duration)
         {
             float t = elapsedTime / duration;
-            t = Mathf.SmoothStep(0, 1, t); // Добавляем сглаживание
+            t = Mathf.SmoothStep(0, 1, t); // Сглаживание
 
             transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
             elapsedTime += Time.deltaTime;
@@ -106,7 +114,7 @@ public class DiceRoll : MonoBehaviour
         rb.isKinematic = false; // Включаем физику обратно
     }
 
-    private Vector3 RandomEdgeCubik(float cameraAngl)
+    private Vector3 RandomEdgeCubik(float cameraAngl, DiceRoll diceRoll)
     {
         int cameraAngle = (int)cameraAngl;
         float res1 = Mathf.Infinity, res2 = Mathf.Infinity;
@@ -117,7 +125,6 @@ public class DiceRoll : MonoBehaviour
         for (int i = 0; i < edges.Length; i++)
         {
             mas[i] = Vector3.Distance(edges[i].position, dicePlate.transform.position);
-            //mas[i] = Vector3.Angle(edges[i].up, Vector3.up);
         }
         for (int i = 0; i < mas.Length; i++)
         {
@@ -136,12 +143,12 @@ public class DiceRoll : MonoBehaviour
                 res2 = a;
                 res2Index = i;
             }
-            //Debug.Log(mas[i]);
         }
 
         res1Index++; res2Index++;
         result += res1Index + "" + res2Index;
         int resultInt = int.Parse(result);
+        diceRoll.result = res1Index;
         //Debug.Log($"Выбраны грани: {res1Index}, {res2Index} -> {resultInt}");
 
         Dictionary<int, Vector3> edgeAnglesDict = new Dictionary<int, Vector3>()
@@ -172,33 +179,6 @@ public class DiceRoll : MonoBehaviour
             {65, new Vector3(165 - cameraAngle, 180, -180)}//6 5 4
         };
 
-        /*Vector3[] edgeAngles = new Vector3[]
-         {
-            new Vector3(-165 + cameraAngle, 0, 0),   // 1
-            new Vector3(-165 + cameraAngle, 0, 90),  // 2
-            new Vector3(-165 + cameraAngle, 0, 180), // 3
-            new Vector3(-165 + cameraAngle, 0, 270), // 4
-            new Vector3(-75 + cameraAngle, 0, 0),    // 5
-            new Vector3(0, 90, -75 + cameraAngle),   // 6
-            new Vector3(75 - cameraAngle, 180, 0),   // 7
-            new Vector3(0, 270, 75 - cameraAngle),   // 8
-            new Vector3(0, 270, -15 - cameraAngle),  // 9
-            new Vector3(-75 + cameraAngle, 360, -90), // 10
-            new Vector3(0, 90, -165 + cameraAngle),  // 11
-            new Vector3(75 - cameraAngle, 180, -90), // 12
-            new Vector3(-75 + cameraAngle, 360, -270), // 13
-            new Vector3(0, 90, -345 + cameraAngle),  // 14
-            new Vector3(75 - cameraAngle, 180, -270), // 15
-            new Vector3(0, 270, -195 - cameraAngle), // 16
-            new Vector3(0, 270, -105 - cameraAngle), // 17
-            new Vector3(-75 + cameraAngle, 0, -180), // 18
-            new Vector3(0, 90, -255 + cameraAngle),  // 19
-            new Vector3(75 - cameraAngle, 180, -180), // 20
-            new Vector3(165 - cameraAngle, 180, -270), // 21
-            new Vector3(165 - cameraAngle, 180, -360), // 22
-            new Vector3(165 - cameraAngle, 180, -90),  // 23
-            new Vector3(165 - cameraAngle, 180, -180)  // 24
-         };*/
         return edgeAnglesDict[resultInt];
     }
 }

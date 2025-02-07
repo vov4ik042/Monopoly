@@ -17,9 +17,23 @@ public class ControllerPlayer : MonoBehaviour
     //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
     private Vector3 startPositionPlayer = new Vector3(16, 0, -16);
     private Quaternion startRotationPlayer = Quaternion.Euler(0, -90, 0);
-    private int steps;
     private float boardSize;
     private byte currentPlayerindex; //Индекс текущего игрока
+
+    private int _steps;
+    public int steps 
+    {
+        get
+        {
+            return _steps;
+        }
+        set
+        {
+            _steps = value;
+            MoveCurrentPlayer(_steps);
+            Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + _steps);
+        }
+    }
 
     private void Awake()
     {
@@ -38,9 +52,7 @@ public class ControllerPlayer : MonoBehaviour
             bool previousPlayer = currentPlayerindex == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerindex - 1].isMoving;
             if (previousPlayer)
             {
-                steps = DiceController.Instance.startThrow();
-                //Debug.Log("Игроку " + players[currentPlayerindex].propertyID + " выпало " + steps);
-                //MoveCurrentPlayer(steps);
+                DiceController.Instance.DropDice();
             }
         }
     }

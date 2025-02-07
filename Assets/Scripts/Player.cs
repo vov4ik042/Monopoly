@@ -34,7 +34,6 @@ public class Player : MonoBehaviour
     }
     public void Move(int steps, int boardSize)
     {
-        StopAllCoroutines();
         StartCoroutine(PlayerMoveCoroutine(steps, boardSize));
     }
 
@@ -77,7 +76,7 @@ public class Player : MonoBehaviour
             {
                 goTo.z = startPositionPlayer.z;
             }
-            Debug.Log("goTo" + goTo + "startPositionPlayer" + startPositionPlayer);
+            //Debug.Log("goTo" + goTo + "startPositionPlayer" + startPositionPlayer);
 
             goTo.y = playerOffSet.y;
 
