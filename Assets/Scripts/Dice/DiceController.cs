@@ -10,7 +10,7 @@ public class DiceController : MonoBehaviour
     [SerializeField] private DiceRoll cube2;
     [SerializeField] private Camera camera;
 
-    private int cubeCount = 1;
+    private int cubeCount = 1;// Для понимания какой кубик
 
     private int _sumResult;
     private int sumResult 
@@ -46,6 +46,7 @@ public class DiceController : MonoBehaviour
     {
         diceThrow(cube1);
         diceThrow(cube2);
+
     }
 
     private void diceThrow(DiceRoll diceRoll)
@@ -56,11 +57,12 @@ public class DiceController : MonoBehaviour
             float x = Random.Range(-180, 180);
             float y = Random.Range(-180, 180);
             float z = Random.Range(-180, 180);
+
             float xForce = Random.Range(10, 30);
             float yForce = Random.Range(10, 30);
             float zForce = Random.Range(10, 30);
+
             Vector3 randomTorque = new Vector3(x, y, z);
-            //Debug.Log(x + " " + y + " " + z);
             rb.AddTorque(randomTorque.x * xForce, randomTorque.y * yForce, randomTorque.z * zForce, ForceMode.Impulse);
 
             StartCoroutine(WaitAndCheckFace(diceRoll));

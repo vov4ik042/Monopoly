@@ -25,69 +25,10 @@ public class DiceRoll : MonoBehaviour
     }
     private Rigidbody rb;
 
-    /*private void OnDrawGizmos()
-    {
-        if (edges[0] == null || dicePlate == null) return;
-
-        // Получаем угол между ними
-        float angle = Vector3.Angle(edges[0].up, Vector3.up);
-        float angle1 = Vector3.Angle(edges[1].up, Vector3.up);
-        float angle2 = Vector3.Angle(edges[2].up, Vector3.up);
-        float angle3 = Vector3.Angle(edges[3].up, Vector3.up);
-        float angle4 = Vector3.Angle(edges[4].up, Vector3.up);
-        float angle5 = Vector3.Angle(edges[5].up, Vector3.up);
-        // Вектор направления для каждой трансформации
-        Vector3 edgeDirection = edges[0].forward;
-        Vector3 diceDirection = Vector3.up;
-
-        // Рисуем линии в сцене
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(edges[0].position, edgeDirection * 2);
-
-        Gizmos.color = Color.blue;
-        Gizmos.DrawRay(Vector3.up, diceDirection * 2);
-
-        Debug.Log("angle 1 " + angle);
-        Debug.Log("angle 2 " + angle1);
-        Debug.Log("angle 3 " + angle2);
-        Debug.Log("angle 4 " + angle3);
-        Debug.Log("angle 5 " + angle4);
-        Debug.Log("angle 6 " + angle5);
-    }*/
-
     public void SnapToClosestFace(DiceRoll diceRoll, float camera)
     {
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true; // Отключаем физику перед докручиванием
-
-        /* Vector3 currentRotation = transform.rotation.eulerAngles;
-         float targetX = Mathf.Round(currentRotation.x / 90) * 90;
-         float targetY = Mathf.Round(currentRotation.y / 90) * 90;
-         float targetZ = Mathf.Round(currentRotation.z / 90) * 90;
-         //Debug.Log("diceRoll " + diceRoll + "   " + targetX + " " + targetY + " " + targetZ);
-
-         if (targetY == 0 || targetY == 360)
-         {
-             //Debug.Log("Y = 0 X = " + targetX);
-             targetX -= 30;
-         }
-         if (targetY == 90)
-         {
-             //Debug.Log("Y = 90 Z = " + targetZ);
-             targetZ += 60;
-         }
-         if (targetY == 270)
-         {
-             //Debug.Log("Y = 270 Z = " + targetZ);
-             targetZ -= 60;
-         }
-         if (targetY == 180)
-         {
-             //Debug.Log("Y = 180 X = " + targetX);
-             targetX -= 60;
-         }
-
-         Debug.Log(" targetX " + targetX + " targetY " + targetY + " targetZ " + targetZ);*/
 
         Vector3 target = RandomEdgeCubik(camera, diceRoll); 
         Quaternion targetRotation = Quaternion.Euler(target.x, target.y, target.z);
@@ -111,7 +52,7 @@ public class DiceRoll : MonoBehaviour
         }
 
         transform.rotation = targetRotation; // Финальное исправление
-        rb.isKinematic = false; // Включаем физику обратно
+        rb.isKinematic = false;
     }
 
     private Vector3 RandomEdgeCubik(float cameraAngl, DiceRoll diceRoll)
