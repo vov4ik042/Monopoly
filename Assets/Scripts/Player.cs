@@ -74,7 +74,6 @@ public class Player : MonoBehaviour
             if (currentPosition == 0 || currentPosition == 10 || currentPosition == 20 || currentPosition == 30) //Обновление позиции рассчета имеено после предыдущих вычеслений
             {
                 startPositionPlayer = startPosition;
-                playerRotateModel();
             }
 
             if ((nextPosition > 10 && nextPosition <= 20) || (nextPosition > 30 && nextPosition < 40) || nextPosition == 0) //Фиксирование X оси на двух сторонах доски

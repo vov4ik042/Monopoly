@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class CardCountry : MonoBehaviour
 {
+    [SerializeField] private int cardIndex;
     public int cardPrice { get; private set; }
     public byte cardIdCountry { get; private set; }
-    //public int MyProperty { get; set; }
 
-    public void ChangeTextureCard()
+    public int OnClicked()
     {
-        
+        Debug.Log("Нажата клетка: " + cardIndex);
+        return cardIndex;
     }
 }

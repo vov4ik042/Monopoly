@@ -66,7 +66,7 @@ public class ControllerPlayer : MonoBehaviour
 
     private void Update()
     {
- 
+
     }
     private void btnTurnController(int phase)
     {
