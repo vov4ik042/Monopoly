@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class ControllerPlayer : MonoBehaviour
 {
@@ -18,7 +19,7 @@ public class ControllerPlayer : MonoBehaviour
     [SerializeField] private Button btnWaiting;
 
     public static ControllerPlayer Instance;
-    private int[] choicePlayers = new int[] { 0,1,2,3,4,5,6,7 };//
+    private int[] choicePlayers = new int[] { 0,1,2,3,4,5 };//
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
     //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
@@ -212,22 +213,32 @@ public class ControllerPlayer : MonoBehaviour
 
     private void PlacementPlayersOnTable()
     {
-        Vector3 startPoint = new Vector3(-30,416,-20);
-        Quaternion startRotation = Quaternion.Euler(-45,0,0);
+        Vector3 startPoint = new Vector3(-40, 425, -20);
         float offsetY = 60.0f;
-        for (int i = 1; i <= players.Count; i++)
+        int j = 0;
+        for (int i = 0; i < players.Count; i++)
         {
-            if (i % 2 == 0)
+            if (j == 2)
             {
-                Instantiate(playersTablePref, new Vector3(startPoint.x, startPoint.y + offsetY, startPoint.z), startRotation, objectCanvas);
+                offsetY += 125.0f;// Дистанция для обьектов, по два
+                j = 1;
             }
-            if (i % 2 == 1)
+            else j++;
+
+            Vector2 position = new Vector2(startPoint.x + ((i % 2 == 0) ? offsetY : -offsetY), startPoint.y);
+            GameObject obj = Instantiate(playersTablePref, objectCanvas);
+
+            RectTransform rectTransform = obj.GetComponent<RectTransform>();
+            rectTransform.anchoredPosition = position;
+            //rectTransform.localScale = Vector3.one;
+
+            TextMeshProUGUI[] textComponent = obj.GetComponentsInChildren<TextMeshProUGUI>();
+            if (textComponent.Length > 0)
             {
-                Instantiate(playersTablePref, new Vector3(startPoint.x, startPoint.y - offsetY, startPoint.z), startRotation, objectCanvas);
+                textComponent[0].text = players[i].propertyPlayerID + "";
+                textComponent[1].text = players[i].moneyPlayer + "$";
             }
-
-
-            if (i == 3) offsetY *= 2;// Для того чтобы первые два сделать по дальше относительно центра, а дальше чтобы относительно друг друга
+            //Debug.Log(i + " " + position);
         }
     }
 
