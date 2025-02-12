@@ -8,7 +8,7 @@ using TMPro;
 public class ControllerPlayer : MonoBehaviour
 {
     [SerializeField] private GameObject[] prefabsPlayers = new GameObject[8]; //Условный список всех игроков (обьектов) пока
-    [SerializeField] private List<Transform> boardCardPositions;
+    //[SerializeField] private List<Transform> boardCardPositions;
     [SerializeField] private Dictionary<int, GameObject> indexObjectPlayer;
     [SerializeField] private List<Player> players = new List<Player>(); // Список всех игроков
     [SerializeField] private GameObject playersTablePref;
@@ -60,7 +60,7 @@ public class ControllerPlayer : MonoBehaviour
 
     private void Start()
     {
-        boardSize = boardCardPositions.Count;
+        boardSize = BoardController.Instance.BoardCardCount();
         currentPlayerindex = 0;
     }
 
@@ -128,7 +128,7 @@ public class ControllerPlayer : MonoBehaviour
         players[currentPlayerindex].isMoving = true;
 
         // Ждем, пока игрок завершит движение
-        yield return StartCoroutine(players[currentPlayerindex].PlayerMoveCoroutine(steps, boardCardPositions.Count));
+        yield return StartCoroutine(players[currentPlayerindex].PlayerMoveCoroutine(steps));
 
         btnTurnController(3);
     }
@@ -241,10 +241,4 @@ public class ControllerPlayer : MonoBehaviour
             //Debug.Log(i + " " + position);
         }
     }
-
-    public Vector3 GetBoardPosition(int index)
-    {
-        return boardCardPositions[index].position;
-    }
-
 }

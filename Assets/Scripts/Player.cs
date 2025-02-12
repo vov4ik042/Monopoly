@@ -40,12 +40,12 @@ public class Player : MonoBehaviour
     {
         startPositionPlayer = transform.position;
     }
-    public void Move(int steps, int boardSize)
+/*    public void Move(int steps)
     {
-        StartCoroutine(PlayerMoveCoroutine(steps, boardSize));
-    }
+        StartCoroutine(PlayerMoveCoroutine(steps));
+    }*/
 
-    public IEnumerator PlayerMoveCoroutine(int steps, int boardSize)
+    public IEnumerator PlayerMoveCoroutine(int steps)
     {
         float moveDuration = .7f;
 
@@ -60,7 +60,7 @@ public class Player : MonoBehaviour
             {
                 nextPosition = 0;
             }
-            Vector3 goTo = ControllerPlayer.Instance.GetBoardPosition(nextPosition);
+            Vector3 goTo = BoardController.Instance.GetBoardPosition(nextPosition);
 
             if (nextPosition == 0 || nextPosition == 20) //Для сохранения своей линии относительно клетки
             {
