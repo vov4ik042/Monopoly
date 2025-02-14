@@ -4,21 +4,24 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
-public class ControllerPlayer : MonoBehaviour
+public class GameController : MonoBehaviour
 {
     [SerializeField] private GameObject[] prefabsPlayers = new GameObject[8]; //Условный список всех игроков (обьектов) пока
     //[SerializeField] private List<Transform> boardCardPositions;
     [SerializeField] private Dictionary<int, GameObject> indexObjectPlayer;
     [SerializeField] private List<Player> players = new List<Player>(); // Список всех игроков
+    [SerializeField] private List<GameObject> playersInfoTable = new List<GameObject>(); // Список всех игроков в таблице
     [SerializeField] private GameObject playersTablePref;
     [SerializeField] private Transform objectCanvas;
 
     [SerializeField] private Button btnStartTurn;
     [SerializeField] private Button btnEndTurn;
-    [SerializeField] private Button btnWaiting;
+    [SerializeField] private Button btnWaitingUp;
+    [SerializeField] private Button btnWaitingDown;
 
-    public static ControllerPlayer Instance;
+    public static GameController Instance;
     private int[] choicePlayers = new int[] { 0,1,2,3,4,5 };//
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
@@ -48,6 +51,8 @@ public class ControllerPlayer : MonoBehaviour
     {
         btnStartTurn.onClick.AddListener(RollTheDices);
         btnEndTurn.onClick.AddListener(EndTurn);
+        btnWaitingUp.onClick.AddListener(PlayerBuyCard);
+        btnWaitingDown.onClick.AddListener(PlayerMakeAuction);
     }
 
     private void Awake()
@@ -72,25 +77,45 @@ public class ControllerPlayer : MonoBehaviour
     {
         switch (phase)
         {
-            case 1:
+            case 1://DiceRoll
                 {
                     btnStartTurn.gameObject.SetActive(true);
-                    btnWaiting.gameObject.SetActive(false);
+                    btnWaitingUp.gameObject.SetActive(false);
+                    btnWaitingDown.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
-            case 2:
+            case 2://BuyOrAuction
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaiting.gameObject.SetActive(true);
+                    btnWaitingUp.gameObject.SetActive(true);
+                    btnWaitingDown.gameObject.SetActive(true);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
-            case 3:
+            case 3://EntTurn
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaiting.gameObject.SetActive(false);
+                    btnWaitingUp.gameObject.SetActive(false);
+                    btnWaitingDown.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(true);
+                    break;
+                }
+            case 4://Disable all
+                {
+                    btnStartTurn.gameObject.SetActive(false);
+                    btnWaitingUp.gameObject.SetActive(false);
+                    btnWaitingDown.gameObject.SetActive(false);
+                    btnEndTurn.gameObject.SetActive(false);
+                    break;
+                }
+            case 5://Player cant buy because of money
+                {
+                    btnStartTurn.gameObject.SetActive(false);
+                    btnWaitingUp.gameObject.SetActive(true);
+                    btnWaitingUp.interactable = false;//off buy
+                    btnWaitingDown.gameObject.SetActive(true);
+                    btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
         }
@@ -98,8 +123,7 @@ public class ControllerPlayer : MonoBehaviour
 
     private void RollTheDices()
     {
-        btnTurnController(2);
-
+        btnTurnController(4);
         bool previousPlayer = currentPlayerindex == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerindex - 1].isMoving;
         if (previousPlayer)
         {
@@ -119,20 +143,63 @@ public class ControllerPlayer : MonoBehaviour
         Debug.Log("currentPlayerindex " + currentPlayerindex);
     }
 
+    private void PlayerBuyCard()
+    {
+        int num = BoardController.Instance.WhatCardNumber();
+        int sum = BoardController.Instance.SumCardCost();
+        players[currentPlayerindex].BuyCard(num, sum);
+        BoardController.Instance.CurrentOwnerCard(num);//Debug.log
+        btnTurnController(3);
+    }
+
+    private void PlayerMakeAuction()
+    {
+        players[currentPlayerindex].AuctionCard();
+    }
+
     private void MoveCurrentPlayer(int steps)
     {
         StartCoroutine(MoveCurrentPlayerCoroutine(steps));
     }
     private IEnumerator MoveCurrentPlayerCoroutine(int steps)
     {
+        int typeButtonTurn;
         players[currentPlayerindex].isMoving = true;
 
         // Ждем, пока игрок завершит движение
         yield return StartCoroutine(players[currentPlayerindex].PlayerMoveCoroutine(steps));
 
-        btnTurnController(3);
+        int currentPosition  = BoardController.Instance.ReturnPLayerPosition();
+
+        if (currentPosition == 0 || currentPosition == 10 || currentPosition == 20 || currentPosition == 30 ||
+            currentPosition == 2 || currentPosition == 5 || currentPosition == 15 || currentPosition == 25 ||
+            currentPosition == 35 || currentPosition == 38)//All special cards
+        {
+            typeButtonTurn = 3;
+            Debug.Log("Specail Card");
+        }
+        else
+        {
+            typeButtonTurn = BoardController.Instance.CheckCardBoughtOrNot(players[currentPlayerindex]);//Смотрим на какую клетку стал игрок
+
+            if (typeButtonTurn == 2)
+            {
+                int sum = BoardController.Instance.SumCardCost();
+                typeButtonTurn = CanPLayerBuyOrNot(sum);
+            }
+        }
+
+        btnTurnController(typeButtonTurn);
     }
 
+    private int CanPLayerBuyOrNot(int sum)//Проверка на плетежеспособность игрока, и отключение кнопки купить
+    {
+        if (players[currentPlayerindex].moneyPlayer - sum > 0)
+        {
+            return 2;
+        }
+        return 5;
+    }
 
     public void CreatePlayer(GameObject playerObject, Vector3 offset, float height)
     {
@@ -227,6 +294,7 @@ public class ControllerPlayer : MonoBehaviour
 
             Vector2 position = new Vector2(startPoint.x + ((i % 2 == 0) ? offsetY : -offsetY), startPoint.y);
             GameObject obj = Instantiate(playersTablePref, objectCanvas);
+            playersInfoTable.Add(obj);
 
             RectTransform rectTransform = obj.GetComponent<RectTransform>();
             rectTransform.anchoredPosition = position;
@@ -239,6 +307,15 @@ public class ControllerPlayer : MonoBehaviour
                 textComponent[1].text = players[i].moneyPlayer + "$";
             }
             //Debug.Log(i + " " + position);
+        }
+    }
+
+    public void UpdatePlayersMoneyInfo()//Візуально сверху
+    {
+        TextMeshProUGUI[] textComponent = playersInfoTable[currentPlayerindex].GetComponentsInChildren<TextMeshProUGUI>();
+        if (textComponent.Length > 0)
+        {
+            textComponent[1].text = players[currentPlayerindex].moneyPlayer + "$";
         }
     }
 }

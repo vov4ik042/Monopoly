@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
@@ -8,7 +9,7 @@ public class Player : MonoBehaviour
 
     public static int playerCounter = 0;
     public static int lol = 0;
-    private List<CardCountry> citiesPlayer = new List<CardCountry>();
+    private List<Card> citiesPlayer = new List<Card>();
 
     private int _moneyPlayer;
 
@@ -96,10 +97,28 @@ public class Player : MonoBehaviour
 
             transform.position = goTo;
             currentPosition = nextPosition;
+            BoardController.Instance.CurrentPlayerPosition(currentPosition);
         }
         isMoving = false;
         Debug.Log("currentPosition " + currentPosition);
     }
+
+    public void BuyCard(int num, int sum)
+    {
+        Card card = BoardController.Instance.ReturnCardObject(num);
+        this.moneyPlayer -= sum;
+        GameController.Instance.UpdatePlayersMoneyInfo();
+        card.PLayerOwner = this;
+    }
+    public void AuctionCard()
+    {
+
+    }
+    public void PayRent()
+    {
+
+    }
+
 
     private void playerRotateModel()
     {

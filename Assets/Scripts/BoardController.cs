@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
 public class BoardController : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class BoardController : MonoBehaviour
     static public BoardController Instance;
     private Dictionary<int, PropertyData> properties;
     private GameObject currentCardOpenInfo { get; set; }//Для удаления обьектов cardINfo
+
+    private int currentPlayerPosition { get; set; }//Для понимая с какой карто работать
 
     private void Awake()
     {
@@ -73,7 +76,7 @@ public class BoardController : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit))
             {
-                CardCountry cardCountry = hit.collider.gameObject.GetComponent<CardCountry>();
+                Card cardCountry = hit.collider.gameObject.GetComponent<Card>();
                 if (cardCountry != null)
                 {
                     if (currentCardOpenInfo != null)
@@ -97,39 +100,7 @@ public class BoardController : MonoBehaviour
 
     private void CreateCardInfo(int index)
     {
-        Vector2 position = new Vector2(743.45f, -138.0f);
-        /*GameObject cardPref = new GameObject();
-        int rent = 0, rentOneHouse = 0, rentTwoHouses = 0, rentThreeHouses = 0,
-            rentFourHouses = 0, rentHotel = 0, price = 0, priceHouse = 0, priceHotel = 0;
-        string cityName = "";
-        switch (index)
-        {
-            case int n when (n == 1 || n == 3 || n == 4): //Slovakia
-                {
-                    cardPref = cardPrefSlovakia;
-                    priceHouse = 50; priceHotel = 50;
-
-                    if (index == 1)
-                    {
-                        cityName = "Trnava";
-                        rent = 2; rentOneHouse = 10; rentTwoHouses = 30; rentThreeHouses = 90; rentFourHouses = 160;
-                        rentHotel = 250; price = 60;
-                    }
-                    if (index == 3)
-                    {
-                        cityName = "Bratislava";
-                        rent = 2; rentOneHouse = 10; rentTwoHouses = 30; rentThreeHouses = 90; rentFourHouses = 160;
-                        rentHotel = 250; price = 60;
-                    }
-                    if (index == 4)
-                    {
-                        cityName = "Kosice";
-                        rent = 4; rentOneHouse = 20; rentTwoHouses = 60; rentThreeHouses = 180; rentFourHouses = 320;
-                        rentHotel = 450; price = 90;
-                    }
-                    break;
-                }
-        }*/
+        Vector2 position = new Vector2(-750.0f, -110.0f);
 
         GameObject cardInfo = TypeOfCountryPref(index);
         currentCardOpenInfo = Instantiate(cardInfo, objectCanvas);
@@ -152,20 +123,40 @@ public class BoardController : MonoBehaviour
             textComponent[8].text = data.RentFourHouses + "$";
             textComponent[9].text = data.RentHotel + "$";
         }
-        /*if (textComponent.Length > 0)
-        {
-            textComponent[0].text = cityName;
-            textComponent[1].text = price + "$";
-            textComponent[2].text = priceHouse + "$";
-            textComponent[3].text = priceHotel + "$";
-            textComponent[4].text = rent + "$";
-            textComponent[5].text = rentOneHouse + "$";
-            textComponent[6].text = rentTwoHouses + "$";
-            textComponent[7].text = rentThreeHouses + "$";
-            textComponent[8].text = rentFourHouses + "$";
-            textComponent[9].text = rentHotel + "$";
-        }*/
+    }
 
+
+    public void CurrentPlayerPosition(int field)
+    {
+        currentPlayerPosition = field;
+    }
+
+    public int CheckCardBoughtOrNot(Player player)
+    {
+        Card cardCountry = boardCardPositions[currentPlayerPosition].GetComponent<Card>();
+        if (cardCountry.PLayerOwner == null)
+        {
+            Debug.Log("Купить или аукцион " + currentPlayerPosition);
+            return 2; //Показываем 2 кнопки купить или аукцион
+        }
+        else
+        {
+            if (cardCountry.PLayerOwner == player)
+            {
+                Debug.Log("Своя клетка " + currentPlayerPosition);
+            }
+            else
+            {
+                Debug.Log("Плачу ренту " + currentPlayerPosition);
+                player.PayRent();
+            }
+            return 3;//Показываю кнопку закончить ход
+        }
+    }
+    public void CurrentOwnerCard(int num)
+    {
+        Card card = boardCardPositions[num].GetComponent<Card>();
+        Debug.Log("owner card " + num + " " + card.PLayerOwner);
     }
 
     private void DeleteCardInfo()
@@ -197,7 +188,7 @@ public class BoardController : MonoBehaviour
         }
     }*/
 
-    private GameObject TypeOfCountryPref(int index)//For gameObject 
+    private GameObject TypeOfCountryPref(int index)//For gameObject visual 
     {
         switch(index)
         {
@@ -236,8 +227,19 @@ public class BoardController : MonoBehaviour
         return null;
     }
 
+    public int ReturnPLayerPosition() => currentPlayerPosition;
+    public Card ReturnCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;
+    public int WhatCardNumber() => currentPlayerPosition;
+    public int SumCardCost()
+    {
+        if (properties.TryGetValue(currentPlayerPosition, out PropertyData data))
+        {
+            return data.Price;
+        }
+        return 0;
+    }
 
 }
 

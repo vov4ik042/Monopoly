@@ -22,7 +22,7 @@ public class DiceController : MonoBehaviour
         set
         {
             _sumResult = value;
-            ControllerPlayer.Instance.steps = _sumResult;
+            GameController.Instance.steps = _sumResult;
         }
     }
 

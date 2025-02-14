@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 
-public class CardCountry : MonoBehaviour
+public class Card : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
 
@@ -18,6 +18,8 @@ public class CardCountry : MonoBehaviour
     private int RentFourHouses { get; set; }
     private int RentHotel { get; set; }
     public int CardPhase { get; set; }
+    public Player PLayerOwner { get; set; }
+
     public int OnClicked()
     {
         return cardIndex;
