@@ -8,8 +8,7 @@ using System;
 
 public class GameController : MonoBehaviour
 {
-    [SerializeField] private GameObject[] prefabsPlayers = new GameObject[8]; //Условный список всех игроков (обьектов) пока
-    //[SerializeField] private List<Transform> boardCardPositions;
+    [SerializeField] private GameObject[] prefabsPlayers = new GameObject[8]; //Условный список всех игроков (обьектов)
     [SerializeField] private Dictionary<int, GameObject> indexObjectPlayer;
     [SerializeField] private List<Player> players = new List<Player>(); // Список всех игроков
     [SerializeField] private List<GameObject> playersInfoTable = new List<GameObject>(); // Список всех игроков в таблице
@@ -23,6 +22,7 @@ public class GameController : MonoBehaviour
 
     public static GameController Instance;
     private int[] choicePlayers = new int[] { 0,1,2,3,4,5 };//
+    private List<Color> colorPlayers = new List<Color>();
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
     //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
@@ -52,11 +52,12 @@ public class GameController : MonoBehaviour
         btnStartTurn.onClick.AddListener(RollTheDices);
         btnEndTurn.onClick.AddListener(EndTurn);
         btnWaitingUp.onClick.AddListener(PlayerBuyCard);
-        btnWaitingDown.onClick.AddListener(PlayerMakeAuction);
+        btnWaitingDown.onClick.AddListener(EndTurn);
     }
 
     private void Awake()
     {
+        ColorsGaveForPlayers();//
         btnTurnController(1);
         Instance = this;
         CreatePlayersOnBoard(choicePlayers);
@@ -67,11 +68,22 @@ public class GameController : MonoBehaviour
     {
         boardSize = BoardController.Instance.BoardCardCount();
         currentPlayerindex = 0;
+        BoardController.Instance.PutPriceOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
     }
 
     private void Update()
     {
 
+    }
+
+    private void ColorsGaveForPlayers()
+    {
+        colorPlayers.Add(Color.red);
+        colorPlayers.Add(Color.green);
+        colorPlayers.Add(Color.blue);
+        colorPlayers.Add(Color.black);
+        colorPlayers.Add(Color.yellow);
+        colorPlayers.Add(Color.white);
     }
     private void btnTurnController(int phase)
     {
@@ -85,7 +97,15 @@ public class GameController : MonoBehaviour
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
-            case 2://BuyOrAuction
+            /*case 2://BuyOrAuction
+                {
+                    btnStartTurn.gameObject.SetActive(false);
+                    btnWaitingUp.gameObject.SetActive(true);
+                    btnWaitingDown.gameObject.SetActive(true);
+                    btnEndTurn.gameObject.SetActive(false);
+                    break;
+                }*/
+            case 2://BuyOrEndTurn
                 {
                     btnStartTurn.gameObject.SetActive(false);
                     btnWaitingUp.gameObject.SetActive(true);
@@ -109,7 +129,7 @@ public class GameController : MonoBehaviour
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
-            case 5://Player cant buy because of money
+            case 5://Player cant buy
                 {
                     btnStartTurn.gameObject.SetActive(false);
                     btnWaitingUp.gameObject.SetActive(true);
@@ -145,11 +165,17 @@ public class GameController : MonoBehaviour
 
     private void PlayerBuyCard()
     {
+        UpdatePlayerColorCardOnBoard();//
         int num = BoardController.Instance.WhatCardNumber();
         int sum = BoardController.Instance.SumCardCost();
         players[currentPlayerindex].BuyCard(num, sum);
         BoardController.Instance.CurrentOwnerCard(num);//Debug.log
-        btnTurnController(3);
+        btnTurnController(5);
+    }
+
+    private void UpdatePlayerColorCardOnBoard()
+    {
+        BoardController.Instance.UpdateColorCardOnBoard(colorPlayers[currentPlayerindex]);
     }
 
     private void PlayerMakeAuction()
@@ -176,7 +202,7 @@ public class GameController : MonoBehaviour
             currentPosition == 35 || currentPosition == 38)//All special cards
         {
             typeButtonTurn = 3;
-            Debug.Log("Specail Card");
+            Debug.Log("Special Card");
         }
         else
         {
@@ -187,6 +213,9 @@ public class GameController : MonoBehaviour
                 int sum = BoardController.Instance.SumCardCost();
                 typeButtonTurn = CanPLayerBuyOrNot(sum);
             }
+
+            TextMeshProUGUI text = btnWaitingUp.GetComponentInChildren<TextMeshProUGUI>(); //Обновить значения на кнопки купить
+            text.text = "Buy\nfor " + BoardController.Instance.SumCardCost().ToString() + "$";
         }
 
         btnTurnController(typeButtonTurn);
@@ -196,8 +225,10 @@ public class GameController : MonoBehaviour
     {
         if (players[currentPlayerindex].moneyPlayer - sum > 0)
         {
+            Debug.Log("2");
             return 2;
         }
+        Debug.Log("5");
         return 5;
     }
 

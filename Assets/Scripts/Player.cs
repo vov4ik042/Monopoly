@@ -109,6 +109,7 @@ public class Player : MonoBehaviour
         this.moneyPlayer -= sum;
         GameController.Instance.UpdatePlayersMoneyInfo();
         card.PLayerOwner = this;
+        card.HideCardPriceText();
     }
     public void AuctionCard()
     {
@@ -118,7 +119,6 @@ public class Player : MonoBehaviour
     {
 
     }
-
 
     private void playerRotateModel()
     {
