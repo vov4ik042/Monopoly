@@ -93,6 +93,7 @@ public class GameController : MonoBehaviour
                 {
                     btnStartTurn.gameObject.SetActive(true);
                     btnWaitingUp.gameObject.SetActive(false);
+                    btnWaitingUp.interactable = true;//off buy
                     btnWaitingDown.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
@@ -195,29 +196,28 @@ public class GameController : MonoBehaviour
         // Ждем, пока игрок завершит движение
         yield return StartCoroutine(players[currentPlayerindex].PlayerMoveCoroutine(steps));
 
-        int currentPosition  = BoardController.Instance.ReturnPLayerPosition();
+        int currentPosition = BoardController.Instance.ReturnPLayerPosition();
 
-        if (currentPosition == 0 || currentPosition == 10 || currentPosition == 20 || currentPosition == 30 ||
-            currentPosition == 2 || currentPosition == 5 || currentPosition == 15 || currentPosition == 25 ||
-            currentPosition == 35 || currentPosition == 38)//All special cards
+        if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
+            currentPosition != 15 && currentPosition != 17 && currentPosition != 25 && currentPosition != 35 && currentPosition != 22 && currentPosition != 38)//All special cards
         {
-            typeButtonTurn = 3;
-            Debug.Log("Special Card");
-        }
-        else
-        {
+            int sum = BoardController.Instance.SumCardCost();
             typeButtonTurn = BoardController.Instance.CheckCardBoughtOrNot(players[currentPlayerindex]);//Смотрим на какую клетку стал игрок
 
             if (typeButtonTurn == 2)
             {
-                int sum = BoardController.Instance.SumCardCost();
                 typeButtonTurn = CanPLayerBuyOrNot(sum);
             }
 
             TextMeshProUGUI text = btnWaitingUp.GetComponentInChildren<TextMeshProUGUI>(); //Обновить значения на кнопки купить
-            text.text = "Buy\nfor " + BoardController.Instance.SumCardCost().ToString() + "$";
+            text.text = "Buy\nfor " + sum.ToString() + "$";
         }
-
+        else
+        {
+            typeButtonTurn = 3;
+            Debug.Log("Special Card");
+        }
+        //Debug.Log("typeButtonTurn " + typeButtonTurn);
         btnTurnController(typeButtonTurn);
     }
 
@@ -225,10 +225,8 @@ public class GameController : MonoBehaviour
     {
         if (players[currentPlayerindex].moneyPlayer - sum > 0)
         {
-            Debug.Log("2");
             return 2;
         }
-        Debug.Log("5");
         return 5;
     }
 

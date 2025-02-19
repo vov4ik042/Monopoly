@@ -51,11 +51,11 @@ public class BoardController : MonoBehaviour
             { 4, new Card("Kosice", 4, 20, 60, 180, 320, 450, 90, 50, 50) },
             { 6, new Card("Krakow", 6, 30, 90, 270, 400, 550, 100, 50, 50) },
             { 7, new Card("Warsawa", 6, 30, 90, 270, 400, 550, 100, 50, 50) },
-            { 8, new Card("Factory") },
+            { 8, new Card("Factory", 200, 25, 50, 100, 200, 400) },
             { 9, new Card("Gdansk", 8, 40, 100, 300, 450, 600, 120, 50, 50) },
             { 11, new Card("Ankara", 10, 50, 150, 450, 625, 750, 140, 100, 100) },
             { 12, new Card("Stambul", 10, 50, 150, 450, 625, 750, 140, 100, 100) },
-            { 13, new Card("Stadium") },
+            { 13, new Card("Stadium", 200, 25, 50, 100, 200, 400) },
             { 14, new Card("Antalya", 12, 60, 180, 500, 700, 900, 160, 100, 100) },
             { 16, new Card("Dresden", 14, 70, 200, 550, 750, 950, 180, 100, 100) },
             { 18, new Card("Berlin", 14, 70, 200, 550, 750, 950, 180, 100, 100) },
@@ -65,13 +65,13 @@ public class BoardController : MonoBehaviour
             { 24, new Card("Kharkiv", 20, 100, 300, 750, 925, 1100, 240, 150, 150) },
             { 26, new Card("California", 22, 110, 330, 800, 975, 1150, 260, 150, 150) },
             { 27, new Card("Washington", 22, 110, 330, 800, 975, 1150, 260, 150, 150) },
-            { 28, new Card("Drug Store") },
+            { 28, new Card("Drug Store", 200, 25, 50, 100, 200, 400) },
             { 29, new Card("New York", 24, 120, 360, 850, 1025, 1200, 280, 150, 150) },
             { 31, new Card("Perth", 26, 130, 390, 900, 1100, 1275, 300, 200, 200) },
             { 32, new Card("Melbourne", 26, 130, 390, 900, 1100, 1275, 300, 200, 200) },
-            { 33, new Card("Gas Station") },
+            { 33, new Card("Gas Station", 200, 25, 50, 100, 200, 400) },
             { 34, new Card("Sydney", 28, 150, 450, 1000, 1200, 1400, 320, 200, 200) },
-            { 36, new Card("Airport") },
+            { 36, new Card("Airport", 200, 25, 50, 100, 200, 400) },
             { 37, new Card("Houten", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200) },
             { 39, new Card("Amsterdam", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200) },
         };
@@ -91,9 +91,9 @@ public class BoardController : MonoBehaviour
                 {
                     DeleteCardInfo();
                 }
-                int index = cardCountry.OnClicked();
+                int index = cardCountry.GetCardIndex();
                 if (index != 2 && index != 5 && index != 15 && index != 17 && index != 22 && index != 25 && index != 35 && index != 38 &&
-                    index != 0 && index != 10 && index != 20 && index != 30) // Special cards
+                    index != 0 && index != 10 && index != 20 && index != 30) // Special and Infrastructure cards
                 {
                     CreateCardInfoUI(index);
                 }
@@ -140,21 +140,21 @@ public class BoardController : MonoBehaviour
         Card cardCountry = boardCardPositions[currentPlayerPosition].GetComponent<Card>();
         if (cardCountry.PLayerOwner == null)
         {
-            Debug.Log("Купить или аукцион " + currentPlayerPosition);
-            return 2; //Показываем 2 кнопки купить или аукцион
+            Debug.Log("Купить или выставить на аукцион");
+            return 2; // 2 кнопки купить или выставить на аукцион
         }
         else
         {
             if (cardCountry.PLayerOwner == player)
             {
-                Debug.Log("Своя клетка " + currentPlayerPosition);
+                Debug.Log("Своя клетка");
             }
             else
             {
-                Debug.Log("Плачу ренту " + currentPlayerPosition);
-                player.PayRent();
+                int index = cardCountry.GetCardIndex();
+                player.PayRent(index, propertiesCardInfo[currentPlayerPosition]);
             }
-            return 3;//Показываю кнопку закончить ход
+            return 3;//Кнопку закончить ход
         }
     }
     public void CurrentOwnerCard(int num)
@@ -251,16 +251,13 @@ public class BoardController : MonoBehaviour
             var cardTextField = boardCardPositions[i].gameObject.GetComponentInChildren<Text>();
             if (propertiesCardInfo.TryGetValue(i, out Card data) && cardTextField != null)
             {
-                if (propertiesCardInfo.ContainsKey(i))
+                if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)
                 {
-                    if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)
-                    {
-                        cardTextField.text = propertiesCardInfo[i].GetPriceCard(0).ToString() + "$";//Country
-                    }
-                    else
-                    {
-                        cardTextField.text = propertiesCardInfo[i].GetPriceCard(1).ToString() + "$";//Infrastructure
-                    }
+                    cardTextField.text = propertiesCardInfo[i].GetPriceCard(0).ToString() + "$";//Country
+                }
+                else
+                {
+                    cardTextField.text = propertiesCardInfo[i].GetPriceCard(1).ToString() + "$";//Infrastructure
                 }
             }
         }

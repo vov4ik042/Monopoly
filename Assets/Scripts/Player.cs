@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
@@ -12,6 +13,7 @@ public class Player : MonoBehaviour
     private List<Card> citiesPlayer = new List<Card>();
 
     private int _moneyPlayer;
+    public bool Bankrupt { get; set; } = false;
 
     public int moneyPlayer
     {
@@ -115,9 +117,29 @@ public class Player : MonoBehaviour
     {
 
     }
-    public void PayRent()
+    public void PayRent(int index, Card card)
     {
+        int sumToPay;
+        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Country card
+        {
+            sumToPay = card.HowManyRentToPayForCountryCard();
+        }
+        else
+        {
+            sumToPay = card.HowManyRentToPayForInfrastructureCard();
+        }
 
+        Debug.Log("Плата за ренту: " + sumToPay);
+        this.moneyPlayer -= sumToPay;
+        StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
+    }
+
+    private IEnumerator VerifyPlayerMoney()
+    {
+        while (this.moneyPlayer < 0 && Bankrupt == false)
+        {
+            yield return null;
+        }
     }
 
     private void playerRotateModel()

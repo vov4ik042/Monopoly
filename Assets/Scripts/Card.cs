@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,18 +9,20 @@ using UnityEngine.UI;
 public class Card : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
-    [SerializeField] private GameObject cardColor;
+    //[SerializeField] private GameObject cardColor;
     [SerializeField] private Text cardTextPrice;
+
+    private int PhaseRentCountry { get; set; } = 0;
+    private int PhaseRentInfrastructure { get; set; } = 0;
 
     private string CityName;
     private int Rent, RentOneHouse, RentTwoHouses, RentThreeHouses, RentFourHouses, RentHotel, Price, PriceHouse, PriceHotel;//For countries card
 
     private string InfrastructureName;
-    private int PriceInfrastructure = 200, OneInfrastructure = 25, TwoInfrastructure = 50, ThreeInfrastructure = 100,
-        FourInfrastructure = 200, FiveInfrastructure = 400;//For infrastructure cards;
+    private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
     public Player PLayerOwner { get; set; }
 
-    public int OnClicked()
+    public int GetCardIndex()
     {
         return cardIndex;
     }
@@ -38,16 +41,16 @@ public class Card : MonoBehaviour
         RentHotel = rentHotel;
     }
 
-    public Card(string infrastructureName)
+    public Card(string infrastructureName, int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure)
     {
         InfrastructureName = infrastructureName;
         //int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure
-        /*PriceInfrastructure = priceInfrastructure;
+        PriceInfrastructure = priceInfrastructure;
         OneInfrastructure = oneInfrastructure;
         TwoInfrastructure = twoInfrastructure;
         ThreeInfrastructure = threeInfrastructure;
         FourInfrastructure = fourInfrastructure;
-        FiveInfrastructure = fiveInfrastructure;*/
+        FiveInfrastructure = fiveInfrastructure;
     }
 
     public void GetInfoForCardCountryInfoUpdate(TextMeshProUGUI[] textComponent)
@@ -88,5 +91,64 @@ public class Card : MonoBehaviour
     {
         if (index == 0) return Price;
         return PriceInfrastructure;
+    }
+
+    public int HowManyRentToPayForCountryCard()
+    {
+        switch (PhaseRentCountry)
+        {
+            case 0://rent
+                {
+                    return Rent;
+                }
+            case 1://rent for one house
+                {
+                    return RentOneHouse;
+                }
+            case 2://rent for two houses
+                {
+                    return RentTwoHouses;
+                }
+            case 3://rent for three houses
+                {
+                    return RentThreeHouses;
+                }
+            case 4://rent for four houses
+                {
+                    return RentFourHouses;
+                }
+            case 5://rent for a hotel
+                {
+                    return RentHotel;
+                }
+        }
+        return 0;
+    }
+    public int HowManyRentToPayForInfrastructureCard()
+    {
+        switch (PhaseRentInfrastructure)
+        {
+            case 0://rent for one Infrastructure
+                {
+                    return OneInfrastructure;
+                }
+            case 1://rent for two Infrastructures
+                {
+                    return TwoInfrastructure;
+                }
+            case 2://rent for three Infrastructures
+                {
+                    return ThreeInfrastructure;
+                }
+            case 3://rent for four Infrastructures
+                {
+                    return FourInfrastructure;
+                }
+            case 4://rent for five Infrastructures
+                {
+                    return FiveInfrastructure;
+                }
+        }
+        return 0;
     }
 }
