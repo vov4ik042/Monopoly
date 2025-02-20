@@ -9,13 +9,11 @@ using UnityEngine.UI;
 public class Card : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
-    //[SerializeField] private GameObject cardColor;
     [SerializeField] private Text cardTextPrice;
-
     private int PhaseRentCountry { get; set; } = 0;
     private int PhaseRentInfrastructure { get; set; } = 0;
 
-    private string CityName;
+    private string CityName, CountryName;
     private int Rent, RentOneHouse, RentTwoHouses, RentThreeHouses, RentFourHouses, RentHotel, Price, PriceHouse, PriceHotel;//For countries card
 
     private string InfrastructureName;
@@ -27,7 +25,7 @@ public class Card : MonoBehaviour
         return cardIndex;
     }
 
-    public Card(string cityName, int rent, int rentOne, int rentTwo, int rentThree, int rentFour, int rentHotel, int price, int priceHouse, int priceHotel)
+    /*public Card(string cityName, int rent, int rentOne, int rentTwo, int rentThree, int rentFour, int rentHotel, int price, int priceHouse, int priceHotel)
     {
         CityName = cityName;
         Price = price;
@@ -52,7 +50,7 @@ public class Card : MonoBehaviour
         FourInfrastructure = fourInfrastructure;
         FiveInfrastructure = fiveInfrastructure;
     }
-
+*/
     public void GetInfoForCardCountryInfoUpdate(TextMeshProUGUI[] textComponent)
     {
         textComponent[0].text = CityName;
@@ -77,11 +75,6 @@ public class Card : MonoBehaviour
         textComponent[6].text = FiveInfrastructure + "$";
     }
 
-    public void ViewColorPLayerOnCard()
-    {
-
-    }
-
     public void HideCardPriceText()
     {
         cardTextPrice.gameObject.SetActive(false);
@@ -92,6 +85,9 @@ public class Card : MonoBehaviour
         if (index == 0) return Price;
         return PriceInfrastructure;
     }
+
+    public string GetCountryName() => CountryName;
+    public Player GetPLayerOwner() => PLayerOwner;
 
     public int HowManyRentToPayForCountryCard()
     {
@@ -150,5 +146,33 @@ public class Card : MonoBehaviour
                 }
         }
         return 0;
+    }
+
+    public void InitializeCardCountry(string cityName, string countryName, int rent, int rentOne, int rentTwo, int rentThree, int rentFour, int rentHotel,
+        int price, int priceHouse, int priceHotel)
+    {
+        CityName = cityName;
+        Price = price;
+        PriceHouse = priceHouse;
+        PriceHotel = priceHotel;
+        Rent = rent;
+        RentOneHouse = rentOne;
+        RentTwoHouses = rentTwo;
+        RentThreeHouses = rentThree;
+        RentFourHouses = rentFour;
+        RentHotel = rentHotel;
+        CountryName = countryName;
+    }
+    public void InitializeCardInfrastructure(string infrastructureName, int priceInfrastructure, int oneInfrastructure, int twoInfrastructure,
+        int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure)
+    {
+        InfrastructureName = infrastructureName;
+        //int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure
+        PriceInfrastructure = priceInfrastructure;
+        OneInfrastructure = oneInfrastructure;
+        TwoInfrastructure = twoInfrastructure;
+        ThreeInfrastructure = threeInfrastructure;
+        FourInfrastructure = fourInfrastructure;
+        FiveInfrastructure = fiveInfrastructure;
     }
 }

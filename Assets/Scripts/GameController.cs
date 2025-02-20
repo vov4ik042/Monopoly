@@ -21,7 +21,7 @@ public class GameController : MonoBehaviour
     [SerializeField] private Button btnWaitingDown;
 
     public static GameController Instance;
-    private int[] choicePlayers = new int[] { 0,1,2,3,4,5 };//
+    private int[] choicePlayers = new int[] { 0, 1 };//
     private List<Color> colorPlayers = new List<Color>();
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
@@ -41,7 +41,7 @@ public class GameController : MonoBehaviour
         }
         set
         {
-            _steps = value;
+            _steps = 1;
             MoveCurrentPlayer(_steps);
             Debug.Log("Игроку " + players[currentPlayerindex].propertyPlayerID + " выпало " + _steps);
         }
@@ -66,6 +66,7 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
+        //BoardController.Instance.AddCardsToListAndInitialize();
         boardSize = BoardController.Instance.BoardCardCount();
         currentPlayerindex = 0;
         BoardController.Instance.PutPriceOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
@@ -166,10 +167,11 @@ public class GameController : MonoBehaviour
 
     private void PlayerBuyCard()
     {
-        UpdatePlayerColorCardOnBoard();//
         int num = BoardController.Instance.WhatCardNumber();
         int sum = BoardController.Instance.SumCardCost();
         players[currentPlayerindex].BuyCard(num, sum);
+        UpdatePlayerColorCardOnBoard();//
+        BoardController.Instance.BuyCityReact(num);
         BoardController.Instance.CurrentOwnerCard(num);//Debug.log
         btnTurnController(5);
     }
@@ -199,7 +201,7 @@ public class GameController : MonoBehaviour
         int currentPosition = BoardController.Instance.ReturnPLayerPosition();
 
         if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
-            currentPosition != 15 && currentPosition != 17 && currentPosition != 25 && currentPosition != 35 && currentPosition != 22 && currentPosition != 38)//All special cards
+            currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38)//All special cards
         {
             int sum = BoardController.Instance.SumCardCost();
             typeButtonTurn = BoardController.Instance.CheckCardBoughtOrNot(players[currentPlayerindex]);//Смотрим на какую клетку стал игрок

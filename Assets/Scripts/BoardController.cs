@@ -6,20 +6,44 @@ using UnityEngine.UIElements;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Unity.VisualScripting;
+using UniRx;
 
 public class BoardController : MonoBehaviour
 {
     [SerializeField] private GameObject[] cardPrefCountries;
     [SerializeField] private GameObject[] cardPrefInfrastructures;
     [SerializeField] private List<GameObject> boardCardPositions;//Список всех полей
-
     [SerializeField] private Transform objectCanvas;
 
     static public BoardController Instance;
-    private Dictionary<int, Card> propertiesCardInfo;
     private GameObject currentCardOpenInfo { get; set; }//Для удаления обьектов cardINfo
-
     private int currentPlayerPosition { get; set; }//Для понимая с какой карто работать
+
+    /*private int CountrySlovakia { get; set; } = 0;//Все страны для счетиков покупки всех городов в стране
+    private int CountryPoland { get; set; } = 0;
+    private int CountryTurkey { get; set; } = 0;
+    private int CountryGerman { get; set; } = 0;
+    private int CountryUkraine { get; set; } = 0;
+    private int CountryUsa { get; set; } = 0;
+    private int CountryAustralia { get; set; } = 0;
+    private int CountryNetherlands { get; set; } = 0;*/
+    //private Dictionary<int, Card> propertiesCardInfo;
+
+    private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();
+    private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
+
+    private readonly Dictionary<string, int> _thresholds = new()
+    {
+        { "Slovakia", 3 },
+        { "Poland", 3 },
+        { "Turkey", 3 },
+        { "German", 3 },
+        { "Ukraine", 3 },
+        { "Usa", 3 },
+        { "Australia", 3 },
+        { "Netherlands", 2 }// У Нидерландов свой лимит
+    };
 
     private void Awake()
     {
@@ -27,7 +51,8 @@ public class BoardController : MonoBehaviour
     }
     private void Start()
     {
-        AddCardsToListAndInitialize();
+        AddCardsToListAndInitialize();//Для инициализация списка карт
+        InitializeAndSubscribeCountryValue();//Для реактивных значений
     }
     private void Update()
     {
@@ -37,6 +62,58 @@ public class BoardController : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        _compositeDisposable.Dispose();
+    }
+
+    private void InitializeAndSubscribeCountryValue()
+    {
+        foreach (var country in _thresholds.Keys)
+        {
+            _countries[country] = new ReactiveProperty<int>(0);
+
+            _countries[country].Subscribe(value =>
+            {
+                if (value == _thresholds[country])
+                {
+                    VerifyAllCountryBelongToOnePlayer(country);
+                }
+
+            }).AddTo(_compositeDisposable);
+        }
+    }
+    private void VerifyAllCountryBelongToOnePlayer(string countryName)
+    {
+        var listCitiesCountry = GetCitiesByCountry(countryName);
+
+        if (listCitiesCountry.Count == 0)
+        {
+            Debug.Log($"В стране {countryName} не нашли городов.");
+            return;
+        }
+
+        Player owner = listCitiesCountry[0].GetPLayerOwner();
+
+        bool allSameOwner = listCitiesCountry.All(city => city.GetPLayerOwner() == owner);
+
+        if (allSameOwner)
+        {
+            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.propertyPlayerID}!");//
+        }
+        else
+        {
+            Debug.Log($"Города в {countryName} имеют разных владельцев.");
+        }
+    }
+    private List<Card> GetCitiesByCountry(string countryName)
+    {
+        return boardCardPositions
+            .Select(obj => obj != null ? obj.GetComponent<Card>() : null)
+            .Where(card => card != null && card.GetCountryName() == countryName)
+            .ToList();
+    }
+
     private void AddCardsToListAndInitialize()
     {
         foreach (Transform child in transform)
@@ -44,7 +121,38 @@ public class BoardController : MonoBehaviour
             boardCardPositions.Add(child.gameObject);
         }
 
-        propertiesCardInfo = new Dictionary<int, Card>//Card Info
+        //Countries
+        boardCardPositions[1].GetComponent<Card>().InitializeCardCountry("Trnava", "Slovakia", 2, 10, 30, 90, 160, 250, 60, 50, 50);
+        boardCardPositions[3].GetComponent<Card>().InitializeCardCountry("Bratislava", "Slovakia", 2, 10, 30, 90, 160, 250, 60, 50, 50);
+        boardCardPositions[4].GetComponent<Card>().InitializeCardCountry("Kosice", "Slovakia", 4, 20, 60, 180, 320, 450, 90, 50, 50);
+        boardCardPositions[6].GetComponent<Card>().InitializeCardCountry("Krakow", "Poland", 6, 30, 90, 270, 400, 550, 100, 50, 50);
+        boardCardPositions[7].GetComponent<Card>().InitializeCardCountry("Warsawa", "Poland", 6, 30, 90, 270, 400, 550, 100, 50, 50);
+        boardCardPositions[9].GetComponent<Card>().InitializeCardCountry("Gdansk", "Poland", 8, 40, 100, 300, 450, 600, 120, 50, 50);
+        boardCardPositions[11].GetComponent<Card>().InitializeCardCountry("Ankara", "Turkey", 10, 50, 150, 450, 625, 750, 140, 100, 100);
+        boardCardPositions[12].GetComponent<Card>().InitializeCardCountry("Stambul", "Turkey", 10, 50, 150, 450, 625, 750, 140, 100, 100);
+        boardCardPositions[14].GetComponent<Card>().InitializeCardCountry("Antalya", "Turkey", 12, 60, 180, 500, 700, 900, 160, 100, 100);
+        boardCardPositions[16].GetComponent<Card>().InitializeCardCountry("Dresden", "German", 14, 70, 200, 550, 750, 950, 180, 100, 100);
+        boardCardPositions[18].GetComponent<Card>().InitializeCardCountry("Berlin", "German", 14, 70, 200, 550, 750, 950, 180, 100, 100);
+        boardCardPositions[19].GetComponent<Card>().InitializeCardCountry("Frankfurt", "German", 16, 80, 220, 600, 800, 1000, 200, 100, 100);
+        boardCardPositions[21].GetComponent<Card>().InitializeCardCountry("Odesa", "Ukraine", 18, 90, 250, 700, 875, 1050, 220, 150, 150);
+        boardCardPositions[23].GetComponent<Card>().InitializeCardCountry("Kyiv", "Ukraine", 18, 90, 250, 700, 875, 1050, 220, 150, 150);
+        boardCardPositions[24].GetComponent<Card>().InitializeCardCountry("Kharkiv", "Ukraine", 20, 100, 300, 750, 925, 1100, 240, 150, 150);
+        boardCardPositions[26].GetComponent<Card>().InitializeCardCountry("California", "Usa", 22, 110, 330, 800, 975, 1150, 260, 150, 150);
+        boardCardPositions[27].GetComponent<Card>().InitializeCardCountry("Washington", "Usa", 22, 110, 330, 800, 975, 1150, 260, 150, 150);
+        boardCardPositions[29].GetComponent<Card>().InitializeCardCountry("New York", "Usa", 24, 120, 360, 850, 1025, 1200, 280, 150, 150);
+        boardCardPositions[31].GetComponent<Card>().InitializeCardCountry("Perth", "Australia", 26, 130, 390, 900, 1100, 1275, 300, 200, 200);
+        boardCardPositions[32].GetComponent<Card>().InitializeCardCountry("Melbourne", "Australia", 26, 130, 390, 900, 1100, 1275, 300, 200, 200);
+        boardCardPositions[34].GetComponent<Card>().InitializeCardCountry("Sydney", "Australia", 28, 150, 450, 1000, 1200, 1400, 320, 200, 200);
+        boardCardPositions[37].GetComponent<Card>().InitializeCardCountry("Houten", "Netherlands", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200);
+        boardCardPositions[39].GetComponent<Card>().InitializeCardCountry("Amsterdam", "Netherlands", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200);
+
+        boardCardPositions[8].GetComponent<Card>().InitializeCardInfrastructure("Factory", 200, 25, 50, 100, 200, 400);//Infrastructure
+        boardCardPositions[13].GetComponent<Card>().InitializeCardInfrastructure("Stadium", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug Store", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas Station", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[36].GetComponent<Card>().InitializeCardInfrastructure("Airport", 200, 25, 50, 100, 200, 400);
+
+        /*propertiesCardInfo = new Dictionary<int, Card>//Card Info
         {
             { 1, new Card("Trnava", 2, 10, 30, 90, 160, 250, 60, 50, 50) },
             { 3, new Card("Bratislava", 2, 10, 30, 90, 160, 250, 60, 50, 50) },
@@ -74,7 +182,7 @@ public class BoardController : MonoBehaviour
             { 36, new Card("Airport", 200, 25, 50, 100, 200, 400) },
             { 37, new Card("Houten", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200) },
             { 39, new Card("Amsterdam", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200) },
-        };
+        };*/
     } 
 
     private void ShowOrHideCardInfo()
@@ -107,7 +215,7 @@ public class BoardController : MonoBehaviour
 
     private void CreateCardInfoUI(int index)
     {
-        Vector2 position = new Vector2(-750.0f, -110.0f);
+        Vector2 position = new Vector2(-750.0f, -90.0f);
 
         GameObject cardInfo = TypeOfCountryPref(index);
         currentCardOpenInfo = Instantiate(cardInfo, objectCanvas);
@@ -117,17 +225,17 @@ public class BoardController : MonoBehaviour
 
         TextMeshProUGUI[] textComponent = currentCardOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
 
-        if (propertiesCardInfo.ContainsKey(index))
-        {
+        //if (boardCardPositions.GetComponent<Card>().ContainsKey(index))
+        //{
             if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
             {
-                propertiesCardInfo[index].GetInfoForCardCountryInfoUpdate(textComponent);//Update info on cards Country Info
+                boardCardPositions[index].GetComponent<Card>().GetInfoForCardCountryInfoUpdate(textComponent);//Update info on cards Country Info
             }
             else
             {
-                propertiesCardInfo[index].GetInfoForCardInfrastructureInfoUpdate(textComponent);//Update info on cards Infrastructure Info
+                boardCardPositions[index].GetComponent<Card>().GetInfoForCardInfrastructureInfoUpdate(textComponent);//Update info on cards Infrastructure Info
             }
-        }
+        //}
     }
 
     public void CurrentPlayerPosition(int field)
@@ -152,7 +260,7 @@ public class BoardController : MonoBehaviour
             else
             {
                 int index = cardCountry.GetCardIndex();
-                player.PayRent(index, propertiesCardInfo[currentPlayerPosition]);
+                player.PayRent(index, cardCountry);
             }
             return 3;//Кнопку закончить ход
         }
@@ -177,7 +285,7 @@ public class BoardController : MonoBehaviour
             case 1:
             case 3:
             case 4:
-                    return cardPrefCountries[0];
+                return cardPrefCountries[0];
             case 6:
             case 7:
             case 9:
@@ -227,14 +335,11 @@ public class BoardController : MonoBehaviour
     public int WhatCardNumber() => currentPlayerPosition;
     public int SumCardCost()
     {
-        if (propertiesCardInfo.ContainsKey(currentPlayerPosition))
-        {
-            if (currentPlayerPosition != 8 && currentPlayerPosition != 13 && currentPlayerPosition != 28 && currentPlayerPosition != 33 && currentPlayerPosition != 36)
+        if (currentPlayerPosition != 8 && currentPlayerPosition != 13 && currentPlayerPosition != 28 && currentPlayerPosition != 33 && currentPlayerPosition != 36)
             { 
-                return propertiesCardInfo[currentPlayerPosition].GetPriceCard(0);//Country
+                return boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(0);//Country
             }
-        }
-        return propertiesCardInfo[currentPlayerPosition].GetPriceCard(1);//Infrastructure
+        return boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(1);//Infrastructure
     }
 
     public void UpdateColorCardOnBoard(Color color)
@@ -249,17 +354,32 @@ public class BoardController : MonoBehaviour
         for (int i = 0; i < boardCardPositions.Count; i++)
         {
             var cardTextField = boardCardPositions[i].gameObject.GetComponentInChildren<Text>();
-            if (propertiesCardInfo.TryGetValue(i, out Card data) && cardTextField != null)
+
+            if (cardTextField != null)//Cards without textField
             {
-                if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)
+                if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)//Country cards
                 {
-                    cardTextField.text = propertiesCardInfo[i].GetPriceCard(0).ToString() + "$";//Country
+                    cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(0).ToString() + "$";//Country
                 }
                 else
                 {
-                    cardTextField.text = propertiesCardInfo[i].GetPriceCard(1).ToString() + "$";//Infrastructure
+                    cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(1).ToString() + "$";//Infrastructure
                 }
             }
+        }
+    }
+
+    public void BuyCityReact(int index)
+    {
+        string countryName = boardCardPositions[index].GetComponent<Card>().GetCountryName();
+
+        if (_countries.ContainsKey(countryName))
+        {
+            _countries[countryName].Value++;
+        }
+        else
+        {
+            Debug.LogError($"Страна {countryName} не найдена!");
         }
     }
 }
