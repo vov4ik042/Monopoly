@@ -909,6 +909,8 @@ MonoBehaviour:
   - {fileID: 8517258752930296949, guid: ca99517b7548d3946916de53202b92bb, type: 3}
   boardCardPositions: []
   objectCanvas: {fileID: 887133762}
+  PanelForCardInfoOperations: {fileID: 7651870024787398855, guid: 1a2752f6df101284582ffd5f47bb89d7,
+    type: 3}
 --- !u!1001 &155792423
 PrefabInstance:
   m_ObjectHideFlags: 0

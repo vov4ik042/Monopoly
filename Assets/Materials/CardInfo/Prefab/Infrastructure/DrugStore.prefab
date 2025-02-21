@@ -415,7 +415,7 @@ GameObject:
   - component: {fileID: 2331684954713746589}
   m_Layer: 5
   m_Name: DrugStore
-  m_TagString: Untagged
+  m_TagString: cardInfoPref
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Air
   - Ground
+  - cardInfoPref
   layers:
   - Default
   - TransparentFX

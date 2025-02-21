@@ -951,7 +951,7 @@ GameObject:
   - component: {fileID: 7060576704917957710}
   m_Layer: 5
   m_Name: GasStation
-  m_TagString: Untagged
+  m_TagString: cardInfoPref
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

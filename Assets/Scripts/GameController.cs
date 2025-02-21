@@ -41,7 +41,7 @@ public class GameController : MonoBehaviour
         }
         set
         {
-            _steps = 1;
+            _steps = 8;
             MoveCurrentPlayer(_steps);
             Debug.Log("Игроку " + players[currentPlayerindex].propertyPlayerID + " выпало " + _steps);
         }
@@ -77,6 +77,7 @@ public class GameController : MonoBehaviour
 
     }
 
+    public Player GetCurrentPlayer() => players[currentPlayerindex];
     private void ColorsGaveForPlayers()
     {
         colorPlayers.Add(Color.red);
@@ -171,7 +172,7 @@ public class GameController : MonoBehaviour
         int sum = BoardController.Instance.SumCardCost();
         players[currentPlayerindex].BuyCard(num, sum);
         UpdatePlayerColorCardOnBoard();//
-        BoardController.Instance.BuyCityReact(num);
+        BoardController.Instance.BuyCityOrInfrastructureReact(num);
         BoardController.Instance.CurrentOwnerCard(num);//Debug.log
         btnTurnController(5);
     }

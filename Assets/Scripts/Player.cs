@@ -110,7 +110,7 @@ public class Player : MonoBehaviour
         Card card = BoardController.Instance.ReturnCardObject(num);
         this.moneyPlayer -= sum;
         GameController.Instance.UpdatePlayersMoneyInfo();
-        card.PLayerOwner = this;
+        card.SetPlayerOwner(this);
         card.HideCardPriceText();
     }
     public void AuctionCard()

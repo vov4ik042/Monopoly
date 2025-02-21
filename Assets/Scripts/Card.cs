@@ -18,11 +18,28 @@ public class Card : MonoBehaviour
 
     private string InfrastructureName;
     private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
-    public Player PLayerOwner { get; set; }
+    private Player PLayerOwner { get; set; }
 
-    public int GetCardIndex()
+    public int GetCardIndex() => cardIndex;
+    public Player GetPLayerOwner() => PLayerOwner;
+    public string GetCountryName() => CountryName;
+    public int GetPriceCard(int index)
     {
-        return cardIndex;
+        if (index == 0) return Price;
+        return PriceInfrastructure;
+    }
+
+    public void SetPlayerOwner(Player player)
+    {
+        PLayerOwner = player;
+    }
+    public void HideCardPriceText()
+    {
+        cardTextPrice.gameObject.SetActive(false);
+    }
+    public void PlayerBuyInfrastructure()
+    {
+        PhaseRentInfrastructure++;
     }
 
     /*public Card(string cityName, int rent, int rentOne, int rentTwo, int rentThree, int rentFour, int rentHotel, int price, int priceHouse, int priceHotel)
@@ -75,19 +92,6 @@ public class Card : MonoBehaviour
         textComponent[6].text = FiveInfrastructure + "$";
     }
 
-    public void HideCardPriceText()
-    {
-        cardTextPrice.gameObject.SetActive(false);
-    }
-
-    public int GetPriceCard(int index)
-    {
-        if (index == 0) return Price;
-        return PriceInfrastructure;
-    }
-
-    public string GetCountryName() => CountryName;
-    public Player GetPLayerOwner() => PLayerOwner;
 
     public int HowManyRentToPayForCountryCard()
     {
@@ -124,23 +128,23 @@ public class Card : MonoBehaviour
     {
         switch (PhaseRentInfrastructure)
         {
-            case 0://rent for one Infrastructure
+            case 1://rent for one Infrastructure
                 {
                     return OneInfrastructure;
                 }
-            case 1://rent for two Infrastructures
+            case 2://rent for two Infrastructures
                 {
                     return TwoInfrastructure;
                 }
-            case 2://rent for three Infrastructures
+            case 3://rent for three Infrastructures
                 {
                     return ThreeInfrastructure;
                 }
-            case 3://rent for four Infrastructures
+            case 4://rent for four Infrastructures
                 {
                     return FourInfrastructure;
                 }
-            case 4://rent for five Infrastructures
+            case 5://rent for five Infrastructures
                 {
                     return FiveInfrastructure;
                 }
@@ -175,4 +179,5 @@ public class Card : MonoBehaviour
         FourInfrastructure = fourInfrastructure;
         FiveInfrastructure = fiveInfrastructure;
     }
+
 }
