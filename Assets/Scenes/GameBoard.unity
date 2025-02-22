@@ -7402,6 +7402,7 @@ MonoBehaviour:
   btnEndTurn: {fileID: 1233989882}
   btnWaitingUp: {fileID: 1691217610}
   btnWaitingDown: {fileID: 964379302}
+  stepppMyValue: 1
 --- !u!1001 &1722144933
 PrefabInstance:
   m_ObjectHideFlags: 0

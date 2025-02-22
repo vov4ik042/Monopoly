@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -9,8 +10,11 @@ public class Player : MonoBehaviour
 {
 
     public static int playerCounter = 0;
-    public static int lol = 0;
     private List<Card> citiesPlayer = new List<Card>();
+
+    //private int[] PhaseRentCountry = new int[8];
+    private int PhaseRentInfrastructure { get; set; } = 0;
+    private int PhaseRentCountry { get; set; } = 0;
 
     private int _moneyPlayer;
     public bool Bankrupt { get; set; } = false;
@@ -43,11 +47,8 @@ public class Player : MonoBehaviour
     {
         startPositionPlayer = transform.position;
     }
-/*    public void Move(int steps)
-    {
-        StartCoroutine(PlayerMoveCoroutine(steps));
-    }*/
-
+    public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
+    public int GetPhaseRentCountry() => PhaseRentCountry;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
         float moveDuration = .7f;
@@ -108,38 +109,58 @@ public class Player : MonoBehaviour
     public void BuyCard(int num, int sum)
     {
         Card card = BoardController.Instance.ReturnCardObject(num);
-        this.moneyPlayer -= sum;
-        GameController.Instance.UpdatePlayersMoneyInfo();
+        _moneyPlayer -= sum;
         card.SetPlayerOwner(this);
-        card.HideCardPriceText();
+        card.ShowHideCardPriceText(false);
     }
+
+    public void SellCard(int cardPrice, int index)
+    {
+        Card card = BoardController.Instance.ReturnCardObject(index);
+        _moneyPlayer += cardPrice / 2;//При продаже возвращается только 50% от стоимости клетки
+        card.SetPlayerOwner(null);
+        card.ShowHideCardPriceText(true);
+        Debug.Log("Card: " + card + " sold, currentOwner " + card.GetPLayerOwner());
+    }
+
     public void AuctionCard()
     {
 
     }
     public void PayRent(int index, Card card)
     {
+        Player OwnerCardPlayer = card.GetPLayerOwner();
         int sumToPay;
         if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Country card
         {
-            sumToPay = card.HowManyRentToPayForCountryCard();
+            sumToPay = card.HowManyRentToPayForCountryCard(OwnerCardPlayer);
         }
         else
         {
-            sumToPay = card.HowManyRentToPayForInfrastructureCard();
+            sumToPay = card.HowManyRentToPayForInfrastructureCard(OwnerCardPlayer);
         }
 
         Debug.Log("Плата за ренту: " + sumToPay);
-        this.moneyPlayer -= sumToPay;
+        _moneyPlayer -= sumToPay;
+        OwnerCardPlayer.moneyPlayer += sumToPay;
+        GameController.Instance.UpdatePlayersMoneyInfo();
         StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
     }
 
     private IEnumerator VerifyPlayerMoney()
     {
-        while (this.moneyPlayer < 0 && Bankrupt == false)
+        while (_moneyPlayer < 0 && Bankrupt == false)
         {
             yield return null;
         }
+    }
+    public void PlayerBuyCardInfrastructure(int index)
+    {
+        PhaseRentInfrastructure++;
+    }
+    public void PlayerSellCardInfrastructure(int index)
+    {
+        PhaseRentInfrastructure--;
     }
 
     private void playerRotateModel()

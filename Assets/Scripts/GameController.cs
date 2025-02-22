@@ -19,6 +19,7 @@ public class GameController : MonoBehaviour
     [SerializeField] private Button btnEndTurn;
     [SerializeField] private Button btnWaitingUp;
     [SerializeField] private Button btnWaitingDown;
+    [SerializeField] private int stepppMyValue;
 
     public static GameController Instance;
     private int[] choicePlayers = new int[] { 0, 1 };//
@@ -41,7 +42,7 @@ public class GameController : MonoBehaviour
         }
         set
         {
-            _steps = 8;
+            _steps = stepppMyValue;
             MoveCurrentPlayer(_steps);
             Debug.Log("Игроку " + players[currentPlayerindex].propertyPlayerID + " выпало " + _steps);
         }
@@ -75,6 +76,11 @@ public class GameController : MonoBehaviour
     private void Update()
     {
 
+    }
+
+    public void ViewPhaseRentInfrastructure(int i)
+    {
+        Debug.Log("PhaseRentInfrastructure " + i);
     }
 
     public Player GetCurrentPlayer() => players[currentPlayerindex];
@@ -171,13 +177,14 @@ public class GameController : MonoBehaviour
         int num = BoardController.Instance.WhatCardNumber();
         int sum = BoardController.Instance.SumCardCost();
         players[currentPlayerindex].BuyCard(num, sum);
+        UpdatePlayersMoneyInfo();
         UpdatePlayerColorCardOnBoard();//
-        BoardController.Instance.BuyCityOrInfrastructureReact(num);
+        BoardController.Instance.BuyCityOrInfrastructureReact(num, players[currentPlayerindex]);
         BoardController.Instance.CurrentOwnerCard(num);//Debug.log
         btnTurnController(5);
     }
 
-    private void UpdatePlayerColorCardOnBoard()
+    public void UpdatePlayerColorCardOnBoard()
     {
         BoardController.Instance.UpdateColorCardOnBoard(colorPlayers[currentPlayerindex]);
     }
@@ -344,10 +351,13 @@ public class GameController : MonoBehaviour
 
     public void UpdatePlayersMoneyInfo()//Візуально сверху
     {
-        TextMeshProUGUI[] textComponent = playersInfoTable[currentPlayerindex].GetComponentsInChildren<TextMeshProUGUI>();
-        if (textComponent.Length > 0)
+        for (int i = 0; i < playersInfoTable.Count; i++)
         {
-            textComponent[1].text = players[currentPlayerindex].moneyPlayer + "$";
+            TextMeshProUGUI[] textComponent = playersInfoTable[i].GetComponentsInChildren<TextMeshProUGUI>();
+            if (textComponent.Length > 0)
+            {
+                textComponent[1].text = players[i].moneyPlayer + "$";
+            }
         }
     }
 }

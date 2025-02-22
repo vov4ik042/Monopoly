@@ -18,10 +18,13 @@ public class BoardController : MonoBehaviour
     [SerializeField] private Transform objectCanvas;
     [SerializeField] private GameObject PanelForCardInfoOperations;
 
+    //private UnityEngine.UI.Button[] ButtonsPanelForCardInfoOperations;
+
     static public BoardController Instance;
     private GameObject currentCardOpenInfo { get; set; }//Для удаления обьектов cardINfo
     private GameObject currentCardPanelOpenInfo { get; set; }//Для удаления панели для  cardINfo
-    private int currentPlayerPosition { get; set; }//Для понимая с какой карто работать
+    private int currentPlayerPosition { get; set; }//Для понимая с какой картой работать
+    private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
 
     /*private int CountrySlovakia { get; set; } = 0;//Все страны для счетиков покупки всех городов в стране
     private int CountryPoland { get; set; } = 0;
@@ -35,7 +38,6 @@ public class BoardController : MonoBehaviour
 
     private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();//Словарь всех стран и кол-во купленых городов
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
-
     private readonly Dictionary<string, int> _thresholds = new()
     {
         { "Slovakia", 3 },
@@ -70,6 +72,13 @@ public class BoardController : MonoBehaviour
         _compositeDisposable.Dispose();
     }
 
+    private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
+    {
+        UnityEngine.UI.Button[] ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
+        ButtonsPanelCardInfo[0].onClick.AddListener(PLayerUpgradeCard);
+        ButtonsPanelCardInfo[1].onClick.AddListener(PLayerDemoteCard);
+        ButtonsPanelCardInfo[2].onClick.AddListener(PLayerSellCard);
+    }
     private void InitializeAndSubscribeCountryValue()
     {
         foreach (var country in _thresholds.Keys)
@@ -78,7 +87,7 @@ public class BoardController : MonoBehaviour
 
             _countries[country].Subscribe(value =>
             {
-                if (value == _thresholds[country])
+                if (value > 1)
                 {
                     VerifyAllCountryBelongToOnePlayer(country);
                 }
@@ -103,10 +112,19 @@ public class BoardController : MonoBehaviour
         if (allSameOwner)
         {
             Debug.Log($"Все города в {countryName} принадлежат игроку {owner.propertyPlayerID}!");//
+            MakeCardsCountryPossibleToUpgrade(listCitiesCountry, true);
         }
         else
         {
             Debug.Log($"Города в {countryName} имеют разных владельцев.");
+            MakeCardsCountryPossibleToUpgrade(listCitiesCountry, false);
+        }
+    }
+    private void MakeCardsCountryPossibleToUpgrade(List<Card> values, bool res)
+    {
+        for (int i = 0; i < values.Count; i++)
+        {
+            values[i].SetCardUpgradeOrNot(res);
         }
     }
     private List<Card> GetCitiesByCountry(string countryName)
@@ -124,8 +142,7 @@ public class BoardController : MonoBehaviour
             boardCardPositions.Add(child.gameObject);
         }
 
-        //Countries
-        boardCardPositions[1].GetComponent<Card>().InitializeCardCountry("Trnava", "Slovakia", 2, 10, 30, 90, 160, 250, 60, 50, 50);
+        boardCardPositions[1].GetComponent<Card>().InitializeCardCountry("Trnava", "Slovakia", 2, 10, 30, 90, 160, 250, 60, 50, 50);//Countries
         boardCardPositions[3].GetComponent<Card>().InitializeCardCountry("Bratislava", "Slovakia", 2, 10, 30, 90, 160, 250, 60, 50, 50);
         boardCardPositions[4].GetComponent<Card>().InitializeCardCountry("Kosice", "Slovakia", 4, 20, 60, 180, 320, 450, 90, 50, 50);
         boardCardPositions[6].GetComponent<Card>().InitializeCardCountry("Krakow", "Poland", 6, 30, 90, 270, 400, 550, 100, 50, 50);
@@ -190,15 +207,15 @@ public class BoardController : MonoBehaviour
 
     private void ShowOrHideCardInfo()
     {
-        if (IsPointerOverUI())// Проверяем, был ли клик по UI
+        if (IsPointerOverUI())//Проверяем, был ли клик по UI
         {
             if (IsPointerOverUIWithTag("cardInfoPref"))
             {
-                Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
+                //Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
                 return;
             }
 
-            Debug.Log("Клик по UI — скрываем карту");
+            //Debug.Log("Клик по UI — скрываем карту");
             if (currentCardOpenInfo != null)
             {
                 DeleteCardInfo();
@@ -209,71 +226,79 @@ public class BoardController : MonoBehaviour
                 DeleteCardPanelInfo();
             }
         }
-
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit))
+        else//If not UI
         {
-            Card cardCountry = hit.collider.gameObject.GetComponent<Card>();
-            Debug.Log("card obj " +  cardCountry);
-            if (cardCountry != null)
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
             {
-                if (currentCardOpenInfo != null)
+                //Debug.Log("hit " + hit);
+                Card cardCountry = hit.collider.gameObject.GetComponent<Card>();
+                if (cardCountry != null)
+                {
+                    if (currentCardOpenInfo != null)
+                    {
+                        DeleteCardInfo();
+                    }
+
+                    if (currentCardPanelOpenInfo != null)
+                    {
+                        DeleteCardPanelInfo();
+                    }
+
+                    int index = cardCountry.GetCardIndex();
+
+                    if (index != 2 && index != 5 && index != 15 && index != 17 && index != 22 && index != 25 &&
+                        index != 35 && index != 38 && index != 0 && index != 10 && index != 20 && index != 30) // Special cards
+                    {
+                        bool owner = VerifyCardOwner(index);
+                        bool result = CurrentPLayerIsOwnThisCard(index);
+
+                        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
+                        {
+                            if (owner)
+                            {
+                                if (result)
+                                {
+                                    CreatePanelForCardInfo(3, index);
+                                }
+                                else
+                                {
+                                    CreatePanelForCardInfo(2, index);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (owner)
+                            {
+                                if (result)
+                                {
+                                    CreatePanelForCardInfo(1, index);
+                                }
+                                else
+                                {
+                                    CreatePanelForCardInfo(0, index);
+                                }
+                            }
+                        }
+                        CreateCardInfoUI(index);
+                    }
+                }
+                else//If not cardObject
                 {
                     DeleteCardInfo();
-                }
-
-                if (currentCardPanelOpenInfo != null)
-                {
                     DeleteCardPanelInfo();
                 }
-
-                int index = cardCountry.GetCardIndex();
-
-                if (index != 2 && index != 5 && index != 15 && index != 17 && index != 22 && index != 25 &&
-                    index != 35 && index != 38 && index != 0 && index != 10 && index != 20 && index != 30) // Special cards
-                {
-                    bool owner = VerifyCardOwner(index);
-                    bool result = CurrentPLayerIsOwnThisCard(index);
-
-                    if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
-                    {
-                        if (owner)
-                        {
-                            if (result)
-                            {
-                                CreatePanelForCardInfo(3, index);
-                            }
-                            else
-                            {
-                                CreatePanelForCardInfo(2, index);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (owner)
-                        {
-                            if (result)
-                            {
-                                CreatePanelForCardInfo(1, index);
-                            }
-                            else
-                            {
-                                CreatePanelForCardInfo(0, index);
-                            }
-                        }
-                    }
-                    CreateCardInfoUI(index);
-                }
             }
-            else
+            else//If nothing
             {
                 DeleteCardInfo();
                 DeleteCardPanelInfo();
             }
         }
+
     }
     private bool IsPointerOverUI()//понять как работает
     {
@@ -311,6 +336,8 @@ public class BoardController : MonoBehaviour
 
     private void CreateCardInfoUI(int index)
     {
+        currentCardInfoIndex = index;//Для дальнейшего использования конкретной карты
+
         Vector2 position = new Vector2(-750.0f, -90.0f);
 
         GameObject cardInfo = TypeOfCountryPref(index);
@@ -333,44 +360,107 @@ public class BoardController : MonoBehaviour
 
     private void CreatePanelForCardInfo(int typeOperation, int index)
     {
+        currentCardPanelOpenInfo = Instantiate(PanelForCardInfoOperations, objectCanvas);
+        GetButtonsFromPanelAndAddListener(currentCardPanelOpenInfo);//Для получения доступа к кнопкам на панели
+
+        Vector2 position = TypeOfOperationForCreatingPanelForCardInfo(typeOperation, index);
+
+        RectTransform rectTransform = currentCardPanelOpenInfo.GetComponent<RectTransform>();
+        rectTransform.anchoredPosition = position;
+
+        Player player = boardCardPositions[index].GetComponent<Card>().GetPLayerOwner();
+
+        TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
+        textComponent[0].text = "Owner " + player.propertyPlayerID;//Заменить на имя, в будущем
+    }
+
+    private Vector2 TypeOfOperationForCreatingPanelForCardInfo(int typeOperation, int index)
+    {
         Vector2 position = new();
 
-        if (typeOperation == 0)//Only view card owner for infrastructure
+        UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
+
+        switch (typeOperation)
+        {
+            case 0://Only view card owner for infrastructure
+                {
+                    position = new Vector2(-742.0f, -315.0f);
+                    break;
+                }
+            case 1://View full panel for infrastructure
+                {
+                    position = new Vector2(-742.0f, -395.0f);
+
+                    buttons[0].gameObject.SetActive(false);
+                    buttons[1].gameObject.SetActive(false);
+
+                    RectTransform rectTransform1 = buttons[2].GetComponent<RectTransform>();
+                    rectTransform1.anchoredPosition = new Vector2(0, 16.99993f);
+                    break;
+                }
+            case 2://Only view card owner for country
+                {
+                    position = new Vector2(-742.0f, -335.0f);
+                    break;
+                }
+            case 3://View full panel for country
+                {
+                    position = new Vector2(-742.0f, -415.0f);
+
+                    bool cardCanUpgrade = boardCardPositions[index].GetComponent<Card>().GetCanCardUpgradeOrNot();
+
+                    if (!cardCanUpgrade)
+                    {
+                        buttons[0].interactable = false;
+                        buttons[1].interactable = false;
+                        /*for (int i = 0; i < buttons.Length - 1; i++)
+                        {
+                            UnityEngine.UI.Image image = buttons[i].GetComponent<UnityEngine.UI.Image>();
+
+                            Color color = image.color;
+                            color.a = 0.7f;
+                            image.color = color;//Прозрачность кнопки
+                        }*/
+                    }
+                    break;
+                }
+        }
+        /*if (typeOperation == 0)//Only view card owner for infrastructure
         {
             position = new Vector2(-742.0f, -315.0f);
         }
         if (typeOperation == 1)//View full panel for infrastructure
         {
             position = new Vector2(-742.0f, -395.0f);
+
+            UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
+
+            buttons[0].gameObject.SetActive(false);
+            buttons[1].gameObject.SetActive(false);
+
+            RectTransform rectTransform1 = buttons[2].GetComponent<RectTransform>();
+            rectTransform1.anchoredPosition = new Vector2(0, 16.99993f);
         }
         if (typeOperation == 2)//Only view card owner for country
         {
             position = new Vector2(-742.0f, -335.0f);
+            bool cardCanUpgrade = boardCardPositions[index].GetComponent<Card>().GetCanCardUpgradeOrNot();
+
+            if (cardCanUpgrade)
+            {
+                UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    CanvasGroup canvasGroup = buttons[i].GetComponent<CanvasGroup>();
+                    canvasGroup.alpha = 0.7f; // 50% прозрачности
+                }
+            }
         }
         if (typeOperation == 3)//View full panel for country
         {
             position = new Vector2(-742.0f, -415.0f);
-        }
-
-        currentCardPanelOpenInfo = Instantiate(PanelForCardInfoOperations, objectCanvas);
-
-        RectTransform rectTransform = currentCardPanelOpenInfo.GetComponent<RectTransform>();
-        rectTransform.anchoredPosition = position;
-
-        if (typeOperation == 1)//Hide 2 buttons for infrastructure card
-        {
-            UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
-            buttons[0].gameObject.SetActive(false);
-            buttons[1].gameObject.SetActive(false);
-            RectTransform rectTransform1 = buttons[2].GetComponent<RectTransform>();
-            rectTransform1.anchoredPosition = new Vector2(0, 16.99993f);
-            //buttons[2].gameObject.transform.position = new Vector2(0, 16.99993f);
-        }
-
-        Player player = boardCardPositions[index].GetComponent<Card>().GetPLayerOwner();
-
-        TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
-        textComponent[0].text = "Owner " + player.propertyPlayerID;//Заменить на имя, в будущем
+        }*/
+        return position;
     }
 
     private bool CurrentPLayerIsOwnThisCard(int index)
@@ -487,20 +577,18 @@ public class BoardController : MonoBehaviour
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;
     public int WhatCardNumber() => currentPlayerPosition;
-    public int SumCardCost()
-    {
-        if (currentPlayerPosition != 8 && currentPlayerPosition != 13 && currentPlayerPosition != 28 && currentPlayerPosition != 33 && currentPlayerPosition != 36)
-            { 
-                return boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(0);//Country
-            }
-        return boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(1);//Infrastructure
-    }
-
+    public int SumCardCost() => boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(currentPlayerPosition);//Infrastructure
     public void UpdateColorCardOnBoard(Color color)
     {
         Transform obj = boardCardPositions[currentPlayerPosition].transform.Find("Color");
         MeshRenderer meshRenderer = obj.GetComponent<MeshRenderer>();
         meshRenderer.material.color = color;
+    }
+    public void HideColorCardOnBoard()
+    {
+        Transform obj = boardCardPositions[currentCardInfoIndex].transform.Find("Color");
+        MeshRenderer meshRenderer = obj.GetComponent<MeshRenderer>();
+        meshRenderer.material.color = new Color(0.4056604f, 0.4056604f, 0.4056604f, 1);
     }
 
     public void PutPriceOnCardsUI()
@@ -511,19 +599,12 @@ public class BoardController : MonoBehaviour
 
             if (cardTextField != null)//Cards without textField
             {
-                if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)//Country cards
-                {
-                    cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(0).ToString() + "$";//Country
-                }
-                else
-                {
-                    cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(1).ToString() + "$";//Infrastructure
-                }
+                cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";//Infrastructure
             }
         }
     }
 
-    public void BuyCityOrInfrastructureReact(int index)
+    public void BuyCityOrInfrastructureReact(int index, Player player)
     {
         string countryName = boardCardPositions[index].GetComponent<Card>().GetCountryName();
 
@@ -540,7 +621,51 @@ public class BoardController : MonoBehaviour
         }
         else
         {
-            boardCardPositions[index].GetComponent<Card>().PlayerBuyInfrastructure();//Increase count of infrastructure
+            player.PlayerBuyCardInfrastructure(index);// Increase count of infrastructure
+        }
+    }
+
+    private void SellCityOrInfrastructureReact(int index, Player player)
+    {
+        string countryName = boardCardPositions[index].GetComponent<Card>().GetCountryName();
+
+        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
+        {
+            if (_countries.ContainsKey(countryName))
+            {
+                _countries[countryName].Value--;
+            }
+        }
+        else
+        {
+            player.PlayerSellCardInfrastructure(index);// Increase count of infrastructure
+        }
+    }
+
+    private void PLayerUpgradeCard()
+    {
+        Debug.Log("Upgrade");
+    }
+    private void PLayerDemoteCard()
+    {
+        Debug.Log("Demote");
+    }
+    private void PLayerSellCard()
+    {
+        if (currentCardInfoIndex != 0)
+        {
+            Player player = GameController.Instance.GetCurrentPlayer();
+            Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+            int cardPrice = card.GetPriceCard(currentCardInfoIndex);
+            player.SellCard(cardPrice, currentCardInfoIndex);
+            SellCityOrInfrastructureReact(currentCardInfoIndex, player);
+            GameController.Instance.UpdatePlayersMoneyInfo();
+            HideColorCardOnBoard();
+            DeleteCardPanelInfo();
+        }
+        else
+        {
+            Debug.Log("currentCardInfoIndex = 0");
         }
     }
 }

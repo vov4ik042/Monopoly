@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,8 +11,7 @@ public class Card : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
     [SerializeField] private Text cardTextPrice;
-    private int PhaseRentCountry { get; set; } = 0;
-    private int PhaseRentInfrastructure { get; set; } = 0;
+    private bool CardCanUpgrade { get; set; } = false;
 
     private string CityName, CountryName;
     private int Rent, RentOneHouse, RentTwoHouses, RentThreeHouses, RentFourHouses, RentHotel, Price, PriceHouse, PriceHotel;//For countries card
@@ -25,7 +25,11 @@ public class Card : MonoBehaviour
     public string GetCountryName() => CountryName;
     public int GetPriceCard(int index)
     {
-        if (index == 0) return Price;
+        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
+        {
+            return Price;
+        }
+
         return PriceInfrastructure;
     }
 
@@ -33,41 +37,16 @@ public class Card : MonoBehaviour
     {
         PLayerOwner = player;
     }
-    public void HideCardPriceText()
+    public void ShowHideCardPriceText(bool res)
     {
-        cardTextPrice.gameObject.SetActive(false);
+        cardTextPrice.gameObject.SetActive(res);
     }
-    public void PlayerBuyInfrastructure()
+    public void SetCardUpgradeOrNot(bool res)
     {
-        PhaseRentInfrastructure++;
+        CardCanUpgrade = res;
     }
+    public bool GetCanCardUpgradeOrNot() => CardCanUpgrade;
 
-    /*public Card(string cityName, int rent, int rentOne, int rentTwo, int rentThree, int rentFour, int rentHotel, int price, int priceHouse, int priceHotel)
-    {
-        CityName = cityName;
-        Price = price;
-        PriceHouse = priceHouse;
-        PriceHotel = priceHotel;
-        Rent = rent;
-        RentOneHouse = rentOne;
-        RentTwoHouses = rentTwo;
-        RentThreeHouses = rentThree;
-        RentFourHouses = rentFour;
-        RentHotel = rentHotel;
-    }
-
-    public Card(string infrastructureName, int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure)
-    {
-        InfrastructureName = infrastructureName;
-        //int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure
-        PriceInfrastructure = priceInfrastructure;
-        OneInfrastructure = oneInfrastructure;
-        TwoInfrastructure = twoInfrastructure;
-        ThreeInfrastructure = threeInfrastructure;
-        FourInfrastructure = fourInfrastructure;
-        FiveInfrastructure = fiveInfrastructure;
-    }
-*/
     public void GetInfoForCardCountryInfoUpdate(TextMeshProUGUI[] textComponent)
     {
         textComponent[0].text = CityName;
@@ -92,10 +71,10 @@ public class Card : MonoBehaviour
         textComponent[6].text = FiveInfrastructure + "$";
     }
 
-
-    public int HowManyRentToPayForCountryCard()
+    public int HowManyRentToPayForCountryCard(Player player)
     {
-        switch (PhaseRentCountry)
+        int phase = player.GetPhaseRentCountry();
+        switch (phase)
         {
             case 0://rent
                 {
@@ -124,9 +103,10 @@ public class Card : MonoBehaviour
         }
         return 0;
     }
-    public int HowManyRentToPayForInfrastructureCard()
+    public int HowManyRentToPayForInfrastructureCard(Player player)
     {
-        switch (PhaseRentInfrastructure)
+        int phase = player.GetPhaseRentInfrastructure();
+        switch (phase)
         {
             case 1://rent for one Infrastructure
                 {
