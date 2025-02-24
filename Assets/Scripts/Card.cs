@@ -12,6 +12,7 @@ public class Card : MonoBehaviour
     [SerializeField] private int cardIndex;
     [SerializeField] private Text cardTextPrice;
     private bool CardCanUpgrade { get; set; } = false;
+    private int PhaseRentCountry { get; set; } = 0;
 
     private string CityName, CountryName;
     private int Rent, RentOneHouse, RentTwoHouses, RentThreeHouses, RentFourHouses, RentHotel, Price, PriceHouse, PriceHotel;//For countries card
@@ -32,6 +33,38 @@ public class Card : MonoBehaviour
 
         return PriceInfrastructure;
     }
+    public int GetPhaseRentCountry() => PhaseRentCountry;
+    public void PlayerUpgradeCity()
+    {
+        PhaseRentCountry++;
+
+        if (PhaseRentCountry == 1)
+        {
+            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
+            BoardController.Instance.TurnOffButtonSellCard(false);
+        }
+        if (PhaseRentCountry == 5)
+        {
+            BoardController.Instance.TurnOffButtonsUpgradeDemote(false,true);
+        }
+    }
+    public void PlayerDemoteCity()
+    {
+        PhaseRentCountry--;
+
+        if (PhaseRentCountry == 0)
+        {
+            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, false);
+            BoardController.Instance.TurnOffButtonSellCard(true);
+        }
+        if (PhaseRentCountry == 4)
+        {
+            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
+        }
+    }
+    public string GetCityName() => CityName;
+    public int GetPriceHouse() => PriceHouse;
+    public int GetPriceHotel() => PriceHotel;
 
     public void SetPlayerOwner(Player player)
     {
@@ -71,10 +104,9 @@ public class Card : MonoBehaviour
         textComponent[6].text = FiveInfrastructure + "$";
     }
 
-    public int HowManyRentToPayForCountryCard(Player player)
+    public int HowManyRentToPayForCountryCard()
     {
-        int phase = player.GetPhaseRentCountry();
-        switch (phase)
+        switch (PhaseRentCountry)
         {
             case 0://rent
                 {

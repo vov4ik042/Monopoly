@@ -29,7 +29,7 @@ public class GameController : MonoBehaviour
     //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
     private Vector3 startPositionPlayer = new Vector3(16, 0, -16);
     private Quaternion startRotationPlayer = Quaternion.Euler(0, -90, 0);
-    private int startMoneyPlayer = 1500;
+    private int startMoneyPlayer = 1500;//465
     private float boardSize;
     private byte currentPlayerindex; //Индекс текущего игрока
 
@@ -177,7 +177,7 @@ public class GameController : MonoBehaviour
         int num = BoardController.Instance.WhatCardNumber();
         int sum = BoardController.Instance.SumCardCost();
         players[currentPlayerindex].BuyCard(num, sum);
-        UpdatePlayersMoneyInfo();
+        UpdatePlayersMoneyInfoOnTable();
         UpdatePlayerColorCardOnBoard();//
         BoardController.Instance.BuyCityOrInfrastructureReact(num, players[currentPlayerindex]);
         BoardController.Instance.CurrentOwnerCard(num);//Debug.log
@@ -224,8 +224,21 @@ public class GameController : MonoBehaviour
         }
         else
         {
+            if (currentPosition == 2 || currentPosition == 22)
+            {
+                players[currentPlayerindex].PlayerPayTax(currentPosition);
+                UpdatePlayersMoneyInfoOnTable();
+            }
+            if (currentPosition == 5 || currentPosition == 17 || currentPosition == 35)
+            {
+                Debug.Log("Question");
+            }
+            if (currentPosition == 15 || currentPosition == 25 || currentPosition == 38)
+            {
+                players[currentPlayerindex].PlayerGotTreasure();
+                UpdatePlayersMoneyInfoOnTable();
+            }
             typeButtonTurn = 3;
-            Debug.Log("Special Card");
         }
         //Debug.Log("typeButtonTurn " + typeButtonTurn);
         btnTurnController(typeButtonTurn);
@@ -233,7 +246,7 @@ public class GameController : MonoBehaviour
 
     private int CanPLayerBuyOrNot(int sum)//Проверка на плетежеспособность игрока, и отключение кнопки купить
     {
-        if (players[currentPlayerindex].moneyPlayer - sum > 0)
+        if (players[currentPlayerindex].moneyPlayer - sum >= 0)
         {
             return 2;
         }
@@ -349,7 +362,7 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void UpdatePlayersMoneyInfo()//Візуально сверху
+    public void UpdatePlayersMoneyInfoOnTable()//Візуально сверху
     {
         for (int i = 0; i < playersInfoTable.Count; i++)
         {

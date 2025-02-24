@@ -5,5 +5,5 @@ using UnityEngine;
 public class CardSpecial : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
-    private bool CardTax { get; set; }
+
 }

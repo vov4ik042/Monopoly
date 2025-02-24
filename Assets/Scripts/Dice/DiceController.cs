@@ -46,7 +46,6 @@ public class DiceController : MonoBehaviour
     {
         diceThrow(cube1);
         diceThrow(cube2);
-
     }
 
     private void diceThrow(DiceRoll diceRoll)

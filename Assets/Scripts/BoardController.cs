@@ -26,15 +26,7 @@ public class BoardController : MonoBehaviour
     private int currentPlayerPosition { get; set; }//Для понимая с какой картой работать
     private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
 
-    /*private int CountrySlovakia { get; set; } = 0;//Все страны для счетиков покупки всех городов в стране
-    private int CountryPoland { get; set; } = 0;
-    private int CountryTurkey { get; set; } = 0;
-    private int CountryGerman { get; set; } = 0;
-    private int CountryUkraine { get; set; } = 0;
-    private int CountryUsa { get; set; } = 0;
-    private int CountryAustralia { get; set; } = 0;
-    private int CountryNetherlands { get; set; } = 0;*/
-    //private Dictionary<int, Card> propertiesCardInfo;
+    private UnityEngine.UI.Button[] buttons;//Кнопки панели
 
     private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();//Словарь всех стран и кол-во купленых городов
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
@@ -378,7 +370,7 @@ public class BoardController : MonoBehaviour
     {
         Vector2 position = new();
 
-        UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
+        buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
 
         switch (typeOperation)
         {
@@ -409,58 +401,57 @@ public class BoardController : MonoBehaviour
 
                     bool cardCanUpgrade = boardCardPositions[index].GetComponent<Card>().GetCanCardUpgradeOrNot();
 
-                    if (!cardCanUpgrade)
+                    if (cardCanUpgrade == false)
                     {
-                        buttons[0].interactable = false;
-                        buttons[1].interactable = false;
-                        /*for (int i = 0; i < buttons.Length - 1; i++)
+                        TurnOffButtonsUpgradeDemote(false, false);
+                    }
+                    else
+                    {
+                        if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
                         {
-                            UnityEngine.UI.Image image = buttons[i].GetComponent<UnityEngine.UI.Image>();
+                            int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
 
-                            Color color = image.color;
-                            color.a = 0.7f;
-                            image.color = color;//Прозрачность кнопки
-                        }*/
+                            if (phase == 0)
+                            {
+                                TurnOffButtonsUpgradeDemote(true, false);
+                            }
+                            else
+                            {
+                                if (phase == 5)
+                                {
+                                    TurnOffButtonsUpgradeDemote(false, true);
+                                }
+                                else
+                                {
+                                    TurnOffButtonsUpgradeDemote(true, true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            TurnOffButtonsUpgradeDemote(false, true);
+                        }
                     }
                     break;
                 }
         }
-        /*if (typeOperation == 0)//Only view card owner for infrastructure
-        {
-            position = new Vector2(-742.0f, -315.0f);
-        }
-        if (typeOperation == 1)//View full panel for infrastructure
-        {
-            position = new Vector2(-742.0f, -395.0f);
-
-            UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
-
-            buttons[0].gameObject.SetActive(false);
-            buttons[1].gameObject.SetActive(false);
-
-            RectTransform rectTransform1 = buttons[2].GetComponent<RectTransform>();
-            rectTransform1.anchoredPosition = new Vector2(0, 16.99993f);
-        }
-        if (typeOperation == 2)//Only view card owner for country
-        {
-            position = new Vector2(-742.0f, -335.0f);
-            bool cardCanUpgrade = boardCardPositions[index].GetComponent<Card>().GetCanCardUpgradeOrNot();
-
-            if (cardCanUpgrade)
-            {
-                UnityEngine.UI.Button[] buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    CanvasGroup canvasGroup = buttons[i].GetComponent<CanvasGroup>();
-                    canvasGroup.alpha = 0.7f; // 50% прозрачности
-                }
-            }
-        }
-        if (typeOperation == 3)//View full panel for country
-        {
-            position = new Vector2(-742.0f, -415.0f);
-        }*/
         return position;
+    }
+
+    public void TurnOffButtonsUpgradeDemote(bool res1, bool res2)
+    {
+        if (buttons[0] != null)
+        {
+            buttons[0].interactable = res1;
+            buttons[1].interactable = res2;
+        }
+    }
+    public void TurnOffButtonSellCard(bool res1)
+    {
+        if (buttons[0] != null)
+        {
+            buttons[2].interactable = res1;
+        }
     }
 
     private bool CurrentPLayerIsOwnThisCard(int index)
@@ -576,8 +567,15 @@ public class BoardController : MonoBehaviour
     public Card ReturnCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;
+    public bool GetPanelForCardInfoIsCreated()
+    {
+        if (currentCardPanelOpenInfo != null)
+            return true;
+        return false;
+    }
     public int WhatCardNumber() => currentPlayerPosition;
     public int SumCardCost() => boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(currentPlayerPosition);//Infrastructure
+    public int SumCardCostForOpenInfo() => boardCardPositions[currentCardInfoIndex].GetComponent<Card>().GetPriceCard(currentCardInfoIndex);//Infrastructure
     public void UpdateColorCardOnBoard(Color color)
     {
         Transform obj = boardCardPositions[currentPlayerPosition].transform.Find("Color");
@@ -644,11 +642,33 @@ public class BoardController : MonoBehaviour
 
     private void PLayerUpgradeCard()
     {
-        Debug.Log("Upgrade");
+        Player player = GameController.Instance.GetCurrentPlayer();
+        Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+        int priceToUpgrade = card.GetPriceHotel();
+
+        player.UpgradeOrDemoteCity(priceToUpgrade);
+        card.PlayerUpgradeCity();
+        GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+
+        Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
+
+        if (!CheckPlayerHasEnoughMoneyToUpgrade(currentCardInfoIndex))//Проверка на наличие денег у игрока на следующую покупку
+        {
+            TurnOffButtonsUpgradeDemote(false, true);
+        }
     }
     private void PLayerDemoteCard()
     {
-        Debug.Log("Demote");
+        Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+        Player player = GameController.Instance.GetCurrentPlayer();
+
+        int priceToDemote = card.GetPriceHotel() / 2;
+
+        player.UpgradeOrDemoteCity(-priceToDemote);
+        card.PlayerDemoteCity();
+        GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+
+        Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
     }
     private void PLayerSellCard()
     {
@@ -656,16 +676,29 @@ public class BoardController : MonoBehaviour
         {
             Player player = GameController.Instance.GetCurrentPlayer();
             Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+
             int cardPrice = card.GetPriceCard(currentCardInfoIndex);
+
             player.SellCard(cardPrice, currentCardInfoIndex);
+
             SellCityOrInfrastructureReact(currentCardInfoIndex, player);
-            GameController.Instance.UpdatePlayersMoneyInfo();
+            GameController.Instance.UpdatePlayersMoneyInfoOnTable();
             HideColorCardOnBoard();
             DeleteCardPanelInfo();
         }
         else
         {
-            Debug.Log("currentCardInfoIndex = 0");
+            Debug.Log("currentCardInfoIndex = 0 or NULL");
         }
+    }
+
+    public bool CheckPlayerHasEnoughMoneyToUpgrade(int index)
+    {
+        Player player = GameController.Instance.GetCurrentPlayer();
+        Card card = boardCardPositions[index].GetComponent<Card>();
+
+        int priceToUpgrade = card.GetPriceHotel();
+
+        return player.PlayerHasEnoughMoneyToUpgrade(priceToUpgrade);
     }
 }
