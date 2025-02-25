@@ -48,14 +48,18 @@ public class Card : MonoBehaviour
             BoardController.Instance.TurnOffButtonsUpgradeDemote(false,true);
         }
     }
-    public void PlayerDemoteCity()
+    public void PlayerDemoteCity(int index)
     {
         PhaseRentCountry--;
 
         if (PhaseRentCountry == 0)
         {
             BoardController.Instance.TurnOffButtonsUpgradeDemote(true, false);
-            BoardController.Instance.TurnOffButtonSellCard(true);
+
+            if (BoardController.Instance.FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
+            {
+                BoardController.Instance.TurnOffButtonSellCard(true);//
+            }
         }
         if (PhaseRentCountry == 4)
         {

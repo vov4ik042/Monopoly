@@ -17,6 +17,7 @@ public class BoardController : MonoBehaviour
     [SerializeField] private List<GameObject> boardCardPositions;//Список всех полей
     [SerializeField] private Transform objectCanvas;
     [SerializeField] private GameObject PanelForCardInfoOperations;
+    [SerializeField] private GameObject ToolTipsEmptryPref;
 
     //private UnityEngine.UI.Button[] ButtonsPanelForCardInfoOperations;
 
@@ -26,7 +27,7 @@ public class BoardController : MonoBehaviour
     private int currentPlayerPosition { get; set; }//Для понимая с какой картой работать
     private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
 
-    private UnityEngine.UI.Button[] buttons;//Кнопки панели
+    private UnityEngine.UI.Button[] ButtonsPanelCardInfo;//Кнопки панели
 
     private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();//Словарь всех стран и кол-во купленых городов
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
@@ -67,6 +68,7 @@ public class BoardController : MonoBehaviour
     private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
     {
         UnityEngine.UI.Button[] ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
+
         ButtonsPanelCardInfo[0].onClick.AddListener(PLayerUpgradeCard);
         ButtonsPanelCardInfo[1].onClick.AddListener(PLayerDemoteCard);
         ButtonsPanelCardInfo[2].onClick.AddListener(PLayerSellCard);
@@ -330,10 +332,13 @@ public class BoardController : MonoBehaviour
     {
         currentCardInfoIndex = index;//Для дальнейшего использования конкретной карты
 
+        Card card = boardCardPositions[index].GetComponent<Card>();
         Vector2 position = new Vector2(-750.0f, -90.0f);
 
         GameObject cardInfo = TypeOfCountryPref(index);
         currentCardOpenInfo = Instantiate(cardInfo, objectCanvas);
+
+        //CreateToolTipsEmptyPref();//Создание подсказок, пока невидимых
 
         RectTransform rectTransform = currentCardOpenInfo.GetComponent<RectTransform>();
         rectTransform.anchoredPosition = position;
@@ -342,11 +347,44 @@ public class BoardController : MonoBehaviour
 
         if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
         {
-            boardCardPositions[index].GetComponent<Card>().GetInfoForCardCountryInfoUpdate(textComponent);//Update info on cards Country Info
+            card.GetInfoForCardCountryInfoUpdate(textComponent);//Update info on cards Country Info
+            CreateUIForRentPrice(1, index);
         }
         else
         {
-            boardCardPositions[index].GetComponent<Card>().GetInfoForCardInfrastructureInfoUpdate(textComponent);//Update info on cards Infrastructure Info
+            card.GetInfoForCardInfrastructureInfoUpdate(textComponent);//Update info on cards Infrastructure Info
+            CreateUIForRentPrice(2, index);
+        }
+    }
+
+    private void CreateUIForRentPrice(int operation, int index)
+    {
+        Transform gameObject1 = currentCardOpenInfo.transform.Find("UiPriceRent");
+        Card card = boardCardPositions[index].GetComponent<Card>();
+
+        if (card.GetPLayerOwner() != null)
+        {
+            Vector2 position;
+            Player player = card.GetPLayerOwner();
+
+            int StartPositionY = operation == 1 ? 118 : 92;
+            int phase = operation == 1 ? card.GetPhaseRentCountry() : player.GetPhaseRentInfrastructure() - 1;
+
+            if (phase != 0)
+            {
+                position = new Vector2(129, StartPositionY - (phase * 51));
+            }
+            else
+            {
+                position = new Vector2(129, StartPositionY);
+            }
+            //gameObject1.position = position;
+            RectTransform rectTransform = gameObject1.GetComponent<RectTransform>();
+            rectTransform.anchoredPosition = position;
+        }
+        else
+        {
+            gameObject1.gameObject.SetActive(false);
         }
     }
 
@@ -370,7 +408,7 @@ public class BoardController : MonoBehaviour
     {
         Vector2 position = new();
 
-        buttons = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
+        ButtonsPanelCardInfo = currentCardPanelOpenInfo.GetComponentsInChildren<UnityEngine.UI.Button>();
 
         switch (typeOperation)
         {
@@ -383,10 +421,10 @@ public class BoardController : MonoBehaviour
                 {
                     position = new Vector2(-742.0f, -395.0f);
 
-                    buttons[0].gameObject.SetActive(false);
-                    buttons[1].gameObject.SetActive(false);
+                    ButtonsPanelCardInfo[0].gameObject.SetActive(false);
+                    ButtonsPanelCardInfo[1].gameObject.SetActive(false);
 
-                    RectTransform rectTransform1 = buttons[2].GetComponent<RectTransform>();
+                    RectTransform rectTransform1 = ButtonsPanelCardInfo[2].GetComponent<RectTransform>();
                     rectTransform1.anchoredPosition = new Vector2(0, 16.99993f);
                     break;
                 }
@@ -398,8 +436,8 @@ public class BoardController : MonoBehaviour
             case 3://View full panel for country
                 {
                     position = new Vector2(-742.0f, -415.0f);
-
-                    bool cardCanUpgrade = boardCardPositions[index].GetComponent<Card>().GetCanCardUpgradeOrNot();
+                    Card card = boardCardPositions[index].GetComponent<Card>();
+                    bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
 
                     if (cardCanUpgrade == false)
                     {
@@ -407,6 +445,10 @@ public class BoardController : MonoBehaviour
                     }
                     else
                     {
+                        if (!FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
+                        {
+                            TurnOffButtonSellCard(false);
+                        }
                         if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
                         {
                             int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
@@ -440,17 +482,17 @@ public class BoardController : MonoBehaviour
 
     public void TurnOffButtonsUpgradeDemote(bool res1, bool res2)
     {
-        if (buttons[0] != null)
+        if (ButtonsPanelCardInfo[0] != null)
         {
-            buttons[0].interactable = res1;
-            buttons[1].interactable = res2;
+            ButtonsPanelCardInfo[0].interactable = res1;
+            ButtonsPanelCardInfo[1].interactable = res2;
         }
     }
     public void TurnOffButtonSellCard(bool res1)
     {
-        if (buttons[0] != null)
+        if (ButtonsPanelCardInfo[0] != null)
         {
-            buttons[2].interactable = res1;
+            ButtonsPanelCardInfo[2].interactable = res1;
         }
     }
 
@@ -656,6 +698,8 @@ public class BoardController : MonoBehaviour
         {
             TurnOffButtonsUpgradeDemote(false, true);
         }
+
+        CreateUIForRentPrice(1, currentCardInfoIndex);
     }
     private void PLayerDemoteCard()
     {
@@ -665,10 +709,12 @@ public class BoardController : MonoBehaviour
         int priceToDemote = card.GetPriceHotel() / 2;
 
         player.UpgradeOrDemoteCity(-priceToDemote);
-        card.PlayerDemoteCity();
+        card.PlayerDemoteCity(currentCardInfoIndex);
         GameController.Instance.UpdatePlayersMoneyInfoOnTable();
 
         Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
+
+        CreateUIForRentPrice(1, currentCardInfoIndex);
     }
     private void PLayerSellCard()
     {
@@ -701,4 +747,29 @@ public class BoardController : MonoBehaviour
 
         return player.PlayerHasEnoughMoneyToUpgrade(priceToUpgrade);
     }
+
+    public bool FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(int index)
+    {
+        var listCities = GetCitiesByCountry(boardCardPositions[index].GetComponent<Card>().GetCountryName());
+        bool result = true;
+        foreach (var c in listCities)
+        {
+            if (c.GetPhaseRentCountry() == 0)
+            {
+                result = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return result;
+    }
+
+    /*private void CreateToolTipsEmptyPref()
+    {
+        GameObject gameObject = Instantiate(ToolTipsEmptryPref, objectCanvas);
+        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
+        rectTransform.anchoredPosition = new Vector2(0,-4);
+    }*/
 }

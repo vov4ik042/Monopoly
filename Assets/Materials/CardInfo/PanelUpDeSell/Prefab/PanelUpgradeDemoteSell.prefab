@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3625919971304508429}
   - component: {fileID: 3135374983524334159}
   - component: {fileID: 4514991423394439931}
+  - component: {fileID: 2753696817856858990}
   m_Layer: 5
   m_Name: Sell
   m_TagString: Untagged
@@ -120,6 +121,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2753696817856858990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5822201675706401325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toolTipPrefab: {fileID: 5205173924716506528, guid: 584400a2418571c43968ca3e84868ebe,
+    type: 3}
 --- !u!1 &6495495787817980213
 GameObject:
   m_ObjectHideFlags: 0
@@ -132,6 +147,7 @@ GameObject:
   - component: {fileID: 8302396090737494122}
   - component: {fileID: 830569579768379546}
   - component: {fileID: 7500622791171479168}
+  - component: {fileID: 2967165994000861738}
   m_Layer: 5
   m_Name: Demote
   m_TagString: Untagged
@@ -240,6 +256,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2967165994000861738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6495495787817980213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toolTipPrefab: {fileID: 3009097916840622546, guid: d2931ed2ad668a347a467cd22916bdaa,
+    type: 3}
 --- !u!1 &7628197022067301793
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,6 +282,7 @@ GameObject:
   - component: {fileID: 5683933179908592116}
   - component: {fileID: 8351912001609112714}
   - component: {fileID: 6235203389632369383}
+  - component: {fileID: 2623574740351193638}
   m_Layer: 5
   m_Name: Upgrade
   m_TagString: Untagged
@@ -360,6 +391,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2623574740351193638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7628197022067301793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toolTipPrefab: {fileID: 3527458172870187851, guid: 714db3e7496c3ae4190fedc971c6e3e1,
+    type: 3}
 --- !u!1 &7651870024787398855
 GameObject:
   m_ObjectHideFlags: 0

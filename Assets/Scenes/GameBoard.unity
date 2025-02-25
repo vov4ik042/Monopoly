@@ -911,6 +911,8 @@ MonoBehaviour:
   objectCanvas: {fileID: 887133762}
   PanelForCardInfoOperations: {fileID: 7651870024787398855, guid: 1a2752f6df101284582ffd5f47bb89d7,
     type: 3}
+  ToolTipsEmptryPref: {fileID: 794839631776008227, guid: b0e93004394e88d40a67fa7aeddb9e27,
+    type: 3}
 --- !u!1001 &155792423
 PrefabInstance:
   m_ObjectHideFlags: 0
