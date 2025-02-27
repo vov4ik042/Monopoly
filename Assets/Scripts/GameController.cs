@@ -5,10 +5,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Unity.Netcode;
 
-public class GameController : MonoBehaviour
+public class GameController : NetworkBehaviour
 {
-    [SerializeField] private GameObject[] prefabsPlayers = new GameObject[8]; //Условный список всех игроков (обьектов)
+    [SerializeField] private GameObject[] playerPrefabs = new GameObject[8]; //Условный список всех игроков (обьектов)
     [SerializeField] private Dictionary<int, GameObject> indexObjectPlayer;
     [SerializeField] private List<Player> players = new List<Player>(); // Список всех игроков
     [SerializeField] private List<GameObject> playersInfoTable = new List<GameObject>(); // Список всех игроков в таблице
@@ -19,16 +20,24 @@ public class GameController : MonoBehaviour
     [SerializeField] private Button btnEndTurn;
     [SerializeField] private Button btnWaitingUp;
     [SerializeField] private Button btnWaitingDown;
-    [SerializeField] private int stepppMyValue;
+    //[SerializeField] private int stepppMyValue;
 
     public static GameController Instance;
-    private int[] choicePlayers = new int[] { 0, 1 };//
+
+    private int[] choicePlayers = new int[] { 0, 6 };//
+
+    private int choicePlayersIndex = 0;//
+    private int countPlayersAir = 1;//
+    private int countPlayersGround = 1;//
+
     private List<Color> colorPlayers = new List<Color>();
+
     private float heightForAirPlayers = 2.0f;
     private float heightForGroundPlayers = 0.15f;
-    //private Vector3 startPositionPlayer = new Vector3(14.5f, 0, -15);
+
     private Vector3 startPositionPlayer = new Vector3(16, 0, -16);
     private Quaternion startRotationPlayer = Quaternion.Euler(0, -90, 0);
+
     private int startMoneyPlayer = 1500;//465
     private float boardSize;
     private byte currentPlayerindex; //Индекс текущего игрока
@@ -42,7 +51,7 @@ public class GameController : MonoBehaviour
         }
         set
         {
-            _steps = stepppMyValue;
+            _steps = value;
             MoveCurrentPlayer(_steps);
             Debug.Log("Игроку " + players[currentPlayerindex].propertyPlayerID + " выпало " + _steps);
         }
@@ -58,29 +67,24 @@ public class GameController : MonoBehaviour
 
     private void Awake()
     {
-        ColorsGaveForPlayers();//
-        btnTurnController(1);
         Instance = this;
-        CreatePlayersOnBoard(choicePlayers);
+        ColorsGaveForPlayers();//
         PlacementPlayersOnTable();
     }
 
     private void Start()
     {
+        currentPlayerindex = 0;
+        CreatePLayers();
         //BoardController.Instance.AddCardsToListAndInitialize();
         boardSize = BoardController.Instance.BoardCardCount();
-        currentPlayerindex = 0;
-        BoardController.Instance.PutPriceOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
-    }
+        BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
+        NetworkManager.Singleton.OnClientConnectedCallback += SpawnPlayersOnBoard;
 
+    }
     private void Update()
     {
 
-    }
-
-    public void ViewPhaseRentInfrastructure(int i)
-    {
-        Debug.Log("PhaseRentInfrastructure " + i);
     }
 
     public Player GetCurrentPlayer() => players[currentPlayerindex];
@@ -149,7 +153,13 @@ public class GameController : MonoBehaviour
                 }
         }
     }
-
+    private void CreatePLayers()
+    {
+        for (int i = 0; i < choicePlayers.Length; i++)
+        {
+            CreatePlayer(playerPrefabs[choicePlayers[i]]);
+        }
+    }
     private void RollTheDices()
     {
         btnTurnController(4);
@@ -253,49 +263,72 @@ public class GameController : MonoBehaviour
         return 5;
     }
 
-    public void CreatePlayer(GameObject playerObject, Vector3 offset, float height)
+    public void CreatePlayer(GameObject playerObject)
     {
-        Player newPlayer = playerObject.AddComponent<Player>();
+        Player newPlayer = playerObject.GetComponent<Player>();
         newPlayer.playerPrefab = playerObject;
         newPlayer.propertyPlayerID++;
         newPlayer.moneyPlayer = startMoneyPlayer;
-        newPlayer.playerOffSet = new Vector3(offset.x, height, offset.z);
+        //newPlayer.playerOffSet = new Vector3(offset.x, height, offset.z);
         players.Add(newPlayer);
         Debug.Log($"Player {newPlayer.propertyPlayerID} created and added.");
     }
 
-    private void CreatePlayersOnBoard(int[] number)
+    private void SpawnPlayersOnBoard(ulong clientId)
     {
-        int countPlayersAir = 1;
-        int countPlayersGround = 1;
-
-        Vector3 offset;
-
-        for (int i = 0; i < number.Length; i++)
+        if (!IsHost)
         {
-            GameObject playerObject;
-            if (prefabsPlayers[number[i]].CompareTag("Air"))
+            return;
+        }
+        Vector3 offset;
+        GameObject playerObject;
+
+        if (playerPrefabs[choicePlayers[choicePlayersIndex]].CompareTag("Air"))
+        {
+            offset = PlacementStartPlayersOnBoard(countPlayersAir);
+            playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers,
+                startPositionPlayer.z + offset.z), startRotationPlayer);
+
+            playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
+            Debug.Log("Air player spawned");
+
+            //CreatePlayer(playerObject, offset, heightForAirPlayers);
+            countPlayersAir++;
+        }
+        else /*(playerPrefabs[number[choicePlayersIndex]].CompareTag("Ground"))*/
+        {
+            offset = PlacementStartPlayersOnBoard(countPlayersGround);
+            playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
+                startPositionPlayer.z + offset.z), startRotationPlayer);
+
+            playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
+            Debug.Log("Ground player spawned");
+
+            //CreatePlayer(playerObject, offset, heightForGroundPlayers);
+            countPlayersGround++;
+        }
+        choicePlayersIndex++;
+
+        if (players.Count == NetworkManager.Singleton.ConnectedClientsList.Count)
+        {
+            StartGame();
+        }
+    }
+    private void StartGame()
+    {
+        Debug.Log("Все игроки подключены. Начинаем игру!");
+        if (IsOwner == players[currentPlayerindex])
+        {
+            if (IsHost)
             {
-                offset = PlacementStartPlayersOnBoard(countPlayersAir);
-                playerObject = Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers,
-                    startPositionPlayer.z + offset.z), startRotationPlayer);
-                CreatePlayer(playerObject, offset, heightForAirPlayers);
-                countPlayersAir++;
-            }
-            if(prefabsPlayers[number[i]].CompareTag("Ground"))
-            {
-                offset = PlacementStartPlayersOnBoard(countPlayersGround);
-                playerObject = Instantiate(prefabsPlayers[number[i]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
-                    startPositionPlayer.z + offset.z), startRotationPlayer);
-                CreatePlayer(playerObject, offset, heightForGroundPlayers);
-                countPlayersGround++;
+                DiceController.Instance.SpawnCubes(objectCanvas);
+                btnTurnController(1);
             }
         }
     }
 
     private Vector3 PlacementStartPlayersOnBoard(int phase)
     {
-
         float offsetX = 1.3f;
         float offsetZ = 1.3f;
         Vector3 result = new Vector3(0, 0, 0);
@@ -332,7 +365,7 @@ public class GameController : MonoBehaviour
 
     private void PlacementPlayersOnTable()
     {
-        Vector3 startPoint = new Vector3(-40, 425, -20);
+        Vector3 startPoint = new Vector3(-40, -135, -20);//425
         float offsetY = 60.0f;
         int j = 0;
         for (int i = 0; i < players.Count; i++)
@@ -350,7 +383,6 @@ public class GameController : MonoBehaviour
 
             RectTransform rectTransform = obj.GetComponent<RectTransform>();
             rectTransform.anchoredPosition = position;
-            //rectTransform.localScale = Vector3.one;
 
             TextMeshProUGUI[] textComponent = obj.GetComponentsInChildren<TextMeshProUGUI>();
             if (textComponent.Length > 0)
@@ -358,7 +390,6 @@ public class GameController : MonoBehaviour
                 textComponent[0].text = players[i].propertyPlayerID + "";
                 textComponent[1].text = players[i].moneyPlayer + "$";
             }
-            //Debug.Log(i + " " + position);
         }
     }
 

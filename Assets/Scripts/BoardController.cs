@@ -160,10 +160,13 @@ public class BoardController : MonoBehaviour
         boardCardPositions[37].GetComponent<Card>().InitializeCardCountry("Houten", "Netherlands", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200);
         boardCardPositions[39].GetComponent<Card>().InitializeCardCountry("Amsterdam", "Netherlands", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200);
 
+        boardCardPositions[2].GetComponent<CardSpecial>().InitializeCard("Luxury   Tax", "15%");
+        boardCardPositions[22].GetComponent<CardSpecial>().InitializeCard("Poor       Tax", "5%");
+
         boardCardPositions[8].GetComponent<Card>().InitializeCardInfrastructure("Factory", 200, 25, 50, 100, 200, 400);//Infrastructure
         boardCardPositions[13].GetComponent<Card>().InitializeCardInfrastructure("Stadium", 200, 25, 50, 100, 200, 400);
-        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug Store", 200, 25, 50, 100, 200, 400);
-        boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas Station", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug    Store", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas   Station", 200, 25, 50, 100, 200, 400);
         boardCardPositions[36].GetComponent<Card>().InitializeCardInfrastructure("Airport", 200, 25, 50, 100, 200, 400);
 
         /*propertiesCardInfo = new Dictionary<int, Card>//Card Info
@@ -631,15 +634,31 @@ public class BoardController : MonoBehaviour
         meshRenderer.material.color = new Color(0.4056604f, 0.4056604f, 0.4056604f, 1);
     }
 
-    public void PutPriceOnCardsUI()
+    public void PutPriceAndNameOnCardsUI()
     {
         for (int i = 0; i < boardCardPositions.Count; i++)
         {
-            var cardTextField = boardCardPositions[i].gameObject.GetComponentInChildren<Text>();
+            TextMeshProUGUI[] cardTextField = boardCardPositions[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>();
 
-            if (cardTextField != null)//Cards without textField
+            if (cardTextField.Length == 2)
             {
-                cardTextField.text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";//Infrastructure
+                if (i == 5 || i == 15 || i == 17 || i == 25 || i == 35 || i == 38) 
+                    continue;
+                if (i != 2 && i != 22)
+                {
+                    cardTextField[0].text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";//Infrastructure
+                    cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetCityName();//Infrastructure
+                }
+                if (i == 2)
+                {
+                    cardTextField[0].text = boardCardPositions[i].GetComponent<CardSpecial>().GetCardName();
+                    cardTextField[1].text = boardCardPositions[i].GetComponent<CardSpecial>().GetPriceName();
+                }
+                if (i == 22)
+                {
+                    cardTextField[0].text = boardCardPositions[i].GetComponent<CardSpecial>().GetCardName();
+                    cardTextField[1].text = boardCardPositions[i].GetComponent<CardSpecial>().GetPriceName();
+                }
             }
         }
     }

@@ -6,8 +6,9 @@ using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UniRx;
+using Unity.Netcode;
 
-public class Player : MonoBehaviour
+public class Player : NetworkBehaviour
 {
 
     public static int playerCounter = 0;
@@ -49,7 +50,7 @@ public class Player : MonoBehaviour
     }
     private void Start()
     {
-        _moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
+        //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
     }
 
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;

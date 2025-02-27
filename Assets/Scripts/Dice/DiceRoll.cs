@@ -1,15 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Netcode;
+using Unity.Netcode.Components;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEngine.GraphicsBuffer;
 
-public class DiceRoll : MonoBehaviour
+public class DiceRoll : NetworkBehaviour
 {
     [SerializeField] private Transform[] edges;
-    [SerializeField] private GameObject dicePlate;
+    private Rigidbody rb;
+    private GameObject dicePlate;
     private int _result;
     public int result
     {
@@ -23,7 +26,11 @@ public class DiceRoll : MonoBehaviour
             DiceController.Instance.WriteResultCube();
         }
     }
-    private Rigidbody rb;
+
+    public void InitializeDicePlate(GameObject gameObject)
+    {
+        dicePlate = gameObject;
+    }
 
     public void SnapToClosestFace(DiceRoll diceRoll, float camera)
     {
@@ -89,7 +96,7 @@ public class DiceRoll : MonoBehaviour
         res1Index++; res2Index++;
         result += res1Index + "" + res2Index;
         int resultInt = int.Parse(result);
-        diceRoll.result = res1Index;
+        diceRoll.result = res1Index;//this?
         //Debug.Log($"Выбраны грани: {res1Index}, {res2Index} -> {resultInt}");
 
         Dictionary<int, Vector3> edgeAnglesDict = new Dictionary<int, Vector3>()

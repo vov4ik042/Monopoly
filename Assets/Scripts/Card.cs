@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public class Card : MonoBehaviour
 {
     [SerializeField] private int cardIndex;
-    [SerializeField] private Text cardTextPrice;
+    [SerializeField] private TextMeshProUGUI cardTextPrice;
     private bool CardCanUpgrade { get; set; } = false;
     private int PhaseRentCountry { get; set; } = 0;
 
@@ -186,7 +186,7 @@ public class Card : MonoBehaviour
     public void InitializeCardInfrastructure(string infrastructureName, int priceInfrastructure, int oneInfrastructure, int twoInfrastructure,
         int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure)
     {
-        InfrastructureName = infrastructureName;
+        CityName = infrastructureName;
         //int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure
         PriceInfrastructure = priceInfrastructure;
         OneInfrastructure = oneInfrastructure;
