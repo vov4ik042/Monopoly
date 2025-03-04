@@ -1,9 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static UnityEngine.GraphicsBuffer;
 
 public class DiceController : NetworkBehaviour
 {
@@ -12,6 +9,7 @@ public class DiceController : NetworkBehaviour
     [SerializeField] private GameObject cubePrefab;
     [SerializeField] private GameObject dicePlate1;
     [SerializeField] private GameObject dicePlate2;
+    [SerializeField] private GameObject diceParent;
     [SerializeField] private Camera camera;
 
     private GameObject cube1;
@@ -37,36 +35,42 @@ public class DiceController : NetworkBehaviour
         Instance = this;
     }
 
-    public void SpawnCubes(Transform objCanvas)
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnCubesServeServerRpc()
     {
-        Vector3 position1 = new Vector3(-9.16f, 19.57f, -15.71f);//-871.0f, 399.0f, 54.0f -9.16f, 19.57f, -15.71f
-        Vector3 position2 = new Vector3(-8.04f, 19.57f, -15.71f);//-759.0f, 399.0f, 54.0f -8.04f, 19.57f, -15.71f
+        Vector3 position1 = new Vector3(-9.10f, 19.69f, -15.71f);
+        Vector3 position2 = new Vector3(-7.90f, 19.69f, -15.71f);
         Quaternion rotation = Quaternion.Euler(-75, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);
-
-        /*        cube1 = Instantiate(cubePrefab, objCanvas);
-
-                RectTransform rectTransform1 = cube1.GetComponent<RectTransform>();
-                rectTransform1.anchoredPosition = position1;
-                rectTransform1.rotation = rotation;*/
-
         cube1.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate1);
-        cube1.GetComponent<NetworkObject>().Spawn();
-
-        Debug.Log("Cube1 spawned");
+        NetworkObject cube1NetworkObject = cube1.GetComponent<NetworkObject>();
+        cube1NetworkObject.Spawn();
 
         cube2 = Instantiate(cubePrefab, position2, rotation);
-        /*cube2 = Instantiate(cubePrefab, objCanvas);
-
-        RectTransform rectTransform2 = cube2.GetComponent<RectTransform>();
-        rectTransform2.anchoredPosition = position2;
-        rectTransform2.rotation = rotation;*/
-
         cube2.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate2);
-        cube2.GetComponent<NetworkObject>().Spawn();
+        NetworkObject cube2NetworkObject = cube2.GetComponent<NetworkObject>();
+        cube2NetworkObject.Spawn();
 
-        Debug.Log("Cube2 spawned");
+        SendCubesToClientsClientRpc(cube1NetworkObject, cube2NetworkObject, dicePlate1, dicePlate2);
+    }
+
+    [ClientRpc]
+    private void SendCubesToClientsClientRpc(NetworkObjectReference cube1Ref, NetworkObjectReference cube2Ref,
+        NetworkObjectReference dicePlate1Ref, NetworkObjectReference dicePlate2Ref)
+    {
+        if (cube1Ref.TryGet(out NetworkObject cube1NetworkObject) && cube2Ref.TryGet(out NetworkObject cube2NetworkObject))
+        {
+            cube1 = cube1NetworkObject.gameObject;
+            cube2 = cube2NetworkObject.gameObject;
+
+            cube1.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate1Ref);
+            cube2.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate2Ref);
+        }
+        else
+        {
+            Debug.LogError("Failed to receive cubes or dice plates on client");
+        }
     }
 
     public void WriteResultCube()// Запись результатов бросков
@@ -82,32 +86,49 @@ public class DiceController : NetworkBehaviour
     }
     public void DropDice()
     {
-        if (!IsHost) return; // Только хост кидает кубик
+        ulong localClientId = NetworkManager.Singleton.LocalClientId;
 
-        diceThrow(cube1.GetComponent<DiceRoll>());
-        diceThrow(cube2.GetComponent<DiceRoll>());
+        DiceThrowServerRpc(new NetworkObjectReference(cube1), localClientId);
+        DiceThrowServerRpc(new NetworkObjectReference(cube2), localClientId);
     }
 
-    private void diceThrow(DiceRoll diceRoll)
+    [ServerRpc(RequireOwnership = false)]
+    public void DiceThrowServerRpc(NetworkObjectReference diceRef, ulong clientId)
     {
-        Rigidbody rb = diceRoll.GetComponent<Rigidbody>();
-        if (rb != null)
+        if (diceRef.TryGet(out NetworkObject diceNetworkObject))
         {
-            float x = Random.Range(-180, 180);
-            float y = Random.Range(-180, 180);
-            float z = Random.Range(-180, 180);
+            DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
+            Rigidbody rb = diceRoll.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                // Apply torque on the server
+                float x = Random.Range(-180, 180);
+                float y = Random.Range(-180, 180);
+                float z = Random.Range(-180, 180);
 
-            float xForce = Random.Range(40, 70);
-            float yForce = Random.Range(40, 70);
-            float zForce = Random.Range(40, 70);
+                float xForce = Random.Range(40, 70);
+                float yForce = Random.Range(40, 70);
+                float zForce = Random.Range(40, 70);
 
-            Debug.Log("xForce " + xForce + " yForce" + yForce + " zForce" + zForce);
+                Vector3 randomTorque = new Vector3(xForce, yForce, zForce);
+                rb.AddTorque(randomTorque);
 
-            Vector3 randomTorque = new Vector3(xForce, yForce, zForce);
-            //Vector3 randomTorque = new Vector3(x * xForce, y * yForce, z * zForce);
+                // Notify the client to start the calculation
+                StartCalculationClientRpc(diceRef, clientId);
+            }
+        }
+        else
+        {
+            Debug.LogError("Failed to get dice NetworkObject");
+        }
+    }
 
-            rb.AddTorque(randomTorque);
-
+    [ClientRpc]
+    private void StartCalculationClientRpc(NetworkObjectReference diceRef, ulong clientId)
+    {
+        if (NetworkManager.Singleton.LocalClientId == clientId && diceRef.TryGet(out NetworkObject diceNetworkObject))
+        {
+            DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
             StartCoroutine(WaitAndCheckFace(diceRoll));
         }
     }
@@ -121,6 +142,32 @@ public class DiceController : NetworkBehaviour
             yield return null; // Ждем, пока кубик не замедлится
         }
 
-        diceRoll.SnapToClosestFace(diceRoll, camera.transform.rotation.eulerAngles.x); // После остановки проверяем грани
+        diceRoll.SnapToClosestFace(diceRoll, camera.transform.rotation.eulerAngles.x);
+
+        SendResultToServerServerRpc(diceRoll.NetworkObject, diceRoll.result);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SendResultToServerServerRpc(NetworkObjectReference diceRef, int result)
+    {
+        if (diceRef.TryGet(out NetworkObject diceNetworkObject))
+        {
+            DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
+            diceRoll.result = result;
+
+            UpdateResultClientRpc(diceRef, result);
+        }
+    }
+
+    [ClientRpc]
+    private void UpdateResultClientRpc(NetworkObjectReference diceRef, int result)
+    {
+        if (diceRef.TryGet(out NetworkObject diceNetworkObject))
+        {
+            DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
+            diceRoll.result = result;
+
+            Debug.Log($"Dice result updated to {result} on client");
+        }
     }
 }

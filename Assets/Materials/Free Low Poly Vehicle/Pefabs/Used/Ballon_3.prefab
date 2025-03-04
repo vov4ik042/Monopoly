@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 5317423165937854083}
   - component: {fileID: 7939775205834510921}
   - component: {fileID: -6974525759786753088}
-  - component: {fileID: -7918597488300455965}
-  - component: {fileID: -5050748723484365707}
+  - component: {fileID: -3620861040250159550}
   - component: {fileID: 4007065002599001061}
+  - component: {fileID: -4868133764360264079}
   m_Layer: 0
   m_Name: Ballon_3
   m_TagString: Air
@@ -31,7 +31,7 @@ Transform:
   m_GameObject: {fileID: 8444041543326102428}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 7.7318864, y: 0, z: -0.00019454956}
+  m_LocalPosition: {x: 9.925342, y: 0, z: 14.7}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -108,7 +108,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 4.37634, y: 6.781372, z: 4.37634}
   m_Center: {x: 0.0069332123, y: 3.3907032, z: 0.009265661}
---- !u!114 &-7918597488300455965
+--- !u!114 &-3620861040250159550
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3988293347
+  GlobalObjectIdHash: 3262016050
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -129,7 +129,19 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &-5050748723484365707
+--- !u!114 &4007065002599001061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8444041543326102428}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebe463238bddc054282595d1887db7d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-4868133764360264079
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -142,9 +154,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UseUnreliableDeltas: 0
-  SyncPositionX: 1
-  SyncPositionY: 1
-  SyncPositionZ: 1
+  SyncPositionX: 0
+  SyncPositionY: 0
+  SyncPositionZ: 0
   SyncRotAngleX: 1
   SyncRotAngleY: 1
   SyncRotAngleZ: 1
@@ -160,15 +172,3 @@ MonoBehaviour:
   InLocalSpace: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!114 &4007065002599001061
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8444041543326102428}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebe463238bddc054282595d1887db7d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

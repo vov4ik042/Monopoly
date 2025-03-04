@@ -10,7 +10,6 @@ using Unity.Netcode;
 
 public class Player : NetworkBehaviour
 {
-
     public static int playerCounter = 0;
     private List<Card> citiesPlayer = new List<Card>();
 
@@ -41,16 +40,28 @@ public class Player : NetworkBehaviour
 
     public Vector3 playerOffSet { get; set; }
     public string playerName { get; set; }
-    public int currentPosition { get; set; } = 0;
+    private int currentPosition { get; set; } = 0;
     public GameObject playerPrefab { get; set; }
     private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
     private void Awake()
     {
         startPositionPlayer = transform.position;
     }
-    private void Start()
+    public override void OnNetworkSpawn()
     {
+        currentPosition = 0;
         //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
+    }
+    private void Update()
+    {
+        if (!IsOwner) return; // Управлять может только свой объект
+
+        float moveX = Input.GetAxis("Horizontal");
+        float moveZ = Input.GetAxis("Vertical");
+
+
+        Vector3 move = new Vector3(moveX, 0, moveZ) * 2.0f * Time.deltaTime;
+        transform.position += move;
     }
 
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
@@ -60,7 +71,8 @@ public class Player : NetworkBehaviour
 
         for (int i = 0; i < steps; i++)
         {
-            Vector3 startPosition = transform.position;
+            Debug.Log("pos: " + currentPosition);
+            Vector3 startPosition = playerPrefab.transform.position;
             float elapsedTime = 0f;
 
             // Вычисляем следующую клетку (по кругу)
@@ -98,14 +110,17 @@ public class Player : NetworkBehaviour
 
             while (elapsedTime < moveDuration)
             {
-                transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
+                //Debug.Log("pos: " + playerPrefab.transform.position);
+                playerPrefab.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            transform.position = goTo;
+            playerPrefab.transform.position = goTo;
             currentPosition = nextPosition;
             BoardController.Instance.CurrentPlayerPosition(currentPosition);
+
+            //UpdatePositionServerRpc(transform.position,currentPosition);
         }
         isMoving = false;
         Debug.Log("currentPosition " + currentPosition);
@@ -214,4 +229,21 @@ public class Player : NetworkBehaviour
         }
         return false;
     }
+
+    /*[ServerRpc]
+    private void UpdatePositionServerRpc(Vector3 newPosition, int newPositionIndex)
+    {
+        currentPosition = newPositionIndex;
+
+        UpdatePositionClientRpc(newPosition, newPositionIndex);
+    }
+
+    [ClientRpc]
+    private void UpdatePositionClientRpc(Vector3 newPosition, int newPositionIndex)
+    {
+        if (IsOwner) return; // Локальный игрок уже в нужной позиции
+
+        currentPosition = newPositionIndex;
+        transform.position = newPosition;
+    }*/
 }
