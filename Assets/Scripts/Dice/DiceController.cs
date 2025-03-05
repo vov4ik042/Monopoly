@@ -17,7 +17,7 @@ public class DiceController : NetworkBehaviour
 
     private int cubeCount = 1;// Для понимания какой кубик
 
-    private int _sumResult;
+    public int _sumResult;
     private int sumResult 
     {
         get
@@ -27,7 +27,6 @@ public class DiceController : NetworkBehaviour
         set
         {
             _sumResult = value;
-            GameController.Instance.steps = _sumResult;
         }
     }
     private void Awake()
@@ -73,23 +72,28 @@ public class DiceController : NetworkBehaviour
         }
     }
 
-    public void WriteResultCube()// Запись результатов бросков
+    public void WriteResultCubes()
     {
-        if (cubeCount == 2)
-        {
-            sumResult = cube1.GetComponent<DiceRoll>().result + cube2.GetComponent<DiceRoll>().result;
-        }
-
-        cubeCount++;
-
-        if (cubeCount == 3) cubeCount = 1;
+        Debug.Log("W");
+        GameController.Instance.steps = cube1.GetComponent<DiceRoll>().result + cube2.GetComponent<DiceRoll>().result;
     }
-    public void DropDice()
+
+    public void MakeResultCubesDefault()
+    {
+        cube1.GetComponent<DiceRoll>().result = 0;
+        cube2.GetComponent<DiceRoll>().result = 0;
+    }
+    public IEnumerator DropDiceCoroutine()
     {
         ulong localClientId = NetworkManager.Singleton.LocalClientId;
 
         DiceThrowServerRpc(new NetworkObjectReference(cube1), localClientId);
         DiceThrowServerRpc(new NetworkObjectReference(cube2), localClientId);
+
+        yield return new WaitUntil(() => cube1.GetComponent<DiceRoll>().result != 0 && cube2.GetComponent<DiceRoll>().result != 0);
+
+        WriteResultCubes();
+        MakeResultCubesDefault();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -155,6 +159,8 @@ public class DiceController : NetworkBehaviour
             DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
             diceRoll.result = result;
 
+            Debug.Log($"Dice result updated {result} on host");
+
             UpdateResultClientRpc(diceRef, result);
         }
     }
@@ -167,7 +173,7 @@ public class DiceController : NetworkBehaviour
             DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
             diceRoll.result = result;
 
-            Debug.Log($"Dice result updated to {result} on client");
+            Debug.Log($"Dice result updated {result} on client");
         }
     }
 }

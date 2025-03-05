@@ -23,7 +23,6 @@ public class DiceRoll : NetworkBehaviour
         set
         {
             _result = value;
-            DiceController.Instance.WriteResultCube();
         }
     }
 

@@ -40,6 +40,7 @@ public class GameController : NetworkBehaviour
     private float boardSize;
     //private byte currentPlayerindex.Value; //Индекс текущего игрока
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
+    public bool CanPlayerMove { get; set; }
 
     private int _steps;
     public int steps 
@@ -51,8 +52,8 @@ public class GameController : NetworkBehaviour
         set
         {
             _steps = value;
-            MoveCurrentPlayer(_steps);
             Debug.Log("Игроку " + players[currentPlayerIndex.Value].propertyPlayerID + " выпало " + _steps);
+            CanPlayerMove = true;
         }
     }
 
@@ -82,10 +83,12 @@ public class GameController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         //currentPlayerIndex.Value = 0;
-        CreatePLayers();
         boardSize = BoardController.Instance.BoardCardCount();
         BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
-        NetworkManager.Singleton.OnClientConnectedCallback += SpawnPlayersOnBoard;
+        if (IsHost)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback += VerifyAllClientsConnectes;
+        }
         if (IsClient && IsSpawned) // Проверяем, что объект заспавнен
         {
             currentPlayerIndex.OnValueChanged += OnTurnChanged;
@@ -97,6 +100,14 @@ public class GameController : NetworkBehaviour
         if (IsClient && IsSpawned)
         {
             currentPlayerIndex.OnValueChanged -= OnTurnChanged;
+        }
+    }
+
+    private void VerifyAllClientsConnectes(ulong clientid)
+    {
+        if (choicePlayers.Length == NetworkManager.Singleton.ConnectedClientsList.Count)
+        {
+            CreatePLayers();
         }
     }
 
@@ -178,21 +189,38 @@ public class GameController : NetworkBehaviour
     }
     private void CreatePLayers()
     {
+        int index = 0;
         for (int i = 0; i < choicePlayers.Length; i++)
         {
-            CreatePlayer(playerPrefabs[choicePlayers[i]]);
+            SpawnAndCreatePLayerOnBoard(playerPrefabs[choicePlayers[i]], NetworkManager.Singleton.ConnectedClientsList[index].ClientId);
+            index++;
         }
     }
     private void RollTheDices()
+    {
+        StartCoroutine(RollTheDicesCoroutine());
+    }
+
+    private IEnumerator RollTheDicesCoroutine()
     {
         if (IsMyTurn())
         {
             btnTurnController(4);
             //bool previousPlayer = currentPlayerIndex.Value == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerIndex.Value - 1].isMoving;
-           // if (previousPlayer)
+            //if (previousPlayer)
             //{
-                DiceController.Instance.DropDice();
+            yield return StartCoroutine(DiceController.Instance.DropDiceCoroutine());
             //}
+
+            if (IsOwner && CanPlayerMove == true)
+            {
+                CanPlayerMove = false;
+                MoveCurrentPlayer(_steps);
+            }
+            else
+            {
+                Debug.Log("Can`t move");
+            }
         }
         else
         {
@@ -234,17 +262,9 @@ public class GameController : NetworkBehaviour
         players[currentPlayerIndex.Value].AuctionCard();
     }
 
-    private void MoveCurrentPlayer(int steps)
+    /*private void MoveCurrentPlayer(int steps)
     {
-        if (IsMyTurn())
-        {
-            StartCoroutine(MoveCurrentPlayerCoroutine(steps));
-            Debug.Log("my turn");
-        }
-        else
-        {
-            Debug.Log("not my turn");
-        }
+        StartCoroutine(MoveCurrentPlayerCoroutine(steps));
     }
     private IEnumerator MoveCurrentPlayerCoroutine(int steps)
     {
@@ -290,6 +310,105 @@ public class GameController : NetworkBehaviour
         }
         //Debug.Log("typeButtonTurn " + typeButtonTurn);
         btnTurnController(typeButtonTurn);
+    }*/
+
+    public void MoveCurrentPlayer(int steps)
+    {
+        MoveCurrentPlayerServerRpc(steps);
+    }
+    [ServerRpc]
+    public void MoveCurrentPlayerServerRpc(int steps, ServerRpcParams serverRpcParams = default)
+    {
+        if (!IsServer) return;
+
+        // Get the player who sent the request
+        ulong clientId = serverRpcParams.Receive.SenderClientId;
+        int playerIndex = GetPlayerIndex(clientId);
+
+        if (playerIndex == -1)
+        {
+            Debug.LogError($"Player with clientId {clientId} not found.");
+            return;
+        }
+
+        // Start the coroutine on the server
+        StartCoroutine(MoveCurrentPlayerCoroutine(playerIndex, steps));
+    }
+    private int GetPlayerIndex(ulong clientId)
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].OwnerClientId == clientId)
+            {
+                return i;
+            }
+        }
+        return -1; // Если игрок не найден
+    }
+
+    private IEnumerator MoveCurrentPlayerCoroutine(int playerIndex, int steps)
+    {
+        players[playerIndex].isMoving = true;
+
+        // Wait for the player to finish moving
+        yield return StartCoroutine(players[playerIndex].PlayerMoveCoroutine(steps));
+
+        int currentPosition = BoardController.Instance.ReturnPLayerPosition();
+
+        if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
+            currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38) // All special cards
+        {
+            int sum = BoardController.Instance.SumCardCost();
+            int typeButtonTurn = BoardController.Instance.CheckCardBoughtOrNot(players[playerIndex]); // Check the card the player landed on
+
+            if (typeButtonTurn == 2)
+            {
+                typeButtonTurn = CanPLayerBuyOrNot(sum);
+            }
+
+            // Notify clients to update the UI
+            UpdateButtonTextClientRpc(sum, typeButtonTurn);
+        }
+        else
+        {
+            if (currentPosition == 2 || currentPosition == 22)
+            {
+                players[playerIndex].PlayerPayTax(currentPosition);
+                UpdatePlayersMoneyInfoOnTableClientRpc(playerIndex, players[playerIndex].moneyPlayer);
+            }
+            if (currentPosition == 5 || currentPosition == 17 || currentPosition == 35)
+            {
+                Debug.Log("Question");
+            }
+            if (currentPosition == 15 || currentPosition == 25 || currentPosition == 38)
+            {
+                players[playerIndex].PlayerGotTreasure();
+                UpdatePlayersMoneyInfoOnTableClientRpc(playerIndex, players[playerIndex].moneyPlayer);
+            }
+
+            int typeButtonTurn = 3;
+            UpdateButtonTextClientRpc(0, typeButtonTurn); // Notify clients to update the UI
+        }
+    }
+
+    [ClientRpc]
+    private void UpdateButtonTextClientRpc(int sum, int typeButtonTurn)
+    {
+        if (typeButtonTurn == 2)
+        {
+            TextMeshProUGUI text = btnWaitingUp.GetComponentInChildren<TextMeshProUGUI>();
+            text.text = "Buy\nfor " + sum.ToString() + "$";
+        }
+
+        btnTurnController(typeButtonTurn);
+    }
+
+    [ClientRpc]
+    private void UpdatePlayersMoneyInfoOnTableClientRpc(int playerIndex, int money)
+    {
+        // Update the UI to reflect the player's new money
+        players[playerIndex].moneyPlayer = money;
+        // Call your UI update logic here
     }
 
     private int CanPLayerBuyOrNot(int sum)//Проверка на плетежеспособность игрока, и отключение кнопки купить
@@ -301,26 +420,65 @@ public class GameController : NetworkBehaviour
         return 5;
     }
 
-    public void CreatePlayer(GameObject playerObject)
+    /*public void CreatePlayer(GameObject playerObject, ulong clientid)
     {
         Player newPlayer = playerObject.GetComponent<Player>();
-        //newPlayer.playerPrefab = playerObject;//
+
         newPlayer.propertyPlayerID++;
         newPlayer.moneyPlayer = startMoneyPlayer;
-        //newPlayer.playerOffSet = new Vector3(offset.x, height, offset.z);
+
         players.Add(newPlayer);
-        Debug.Log($"Player {newPlayer.propertyPlayerID} created and added.");
+        Debug.Log($"Player {newPlayer.propertyPlayerID} created.");
+    }*/
+    /*[ServerRpc]
+    public void CreatePlayerServerRpc(NetworkObjectReference playerObjectReference)
+    {
+        if (playerObjectReference.TryGet(out NetworkObject playerNetworkObject))
+        {
+            Player newPlayer = playerNetworkObject.GetComponent<Player>();
+
+            newPlayer.propertyPlayerID++;
+            newPlayer.moneyPlayer = startMoneyPlayer;
+
+            players.Add(newPlayer);
+
+            Debug.Log($"Player {newPlayer.propertyPlayerID} created and added on the server.");
+
+            SyncNewPlayerClientRpc(playerObjectReference, newPlayer.propertyPlayerID, newPlayer.moneyPlayer);
+        }
+        else
+        {
+            Debug.LogError("Failed to resolve NetworkObjectReference.");
+        }
     }
 
-    private void SpawnPlayersOnBoard(ulong clientId)
+    [ClientRpc]
+    private void SyncNewPlayerClientRpc(NetworkObjectReference playerObjectReference, int propertyPlayerID, int moneyPlayer)
     {
-        if (!IsHost)
+        if (playerObjectReference.TryGet(out NetworkObject playerNetworkObject))
         {
-            return;
-        }
+            Player newPlayer = playerNetworkObject.GetComponent<Player>();
 
+            newPlayer.propertyPlayerID = propertyPlayerID;
+            newPlayer.moneyPlayer = moneyPlayer;
+
+            players.Add(newPlayer);
+
+            Debug.Log($"Player {newPlayer.propertyPlayerID} created and added on the client.");
+        }
+        else
+        {
+            Debug.LogError("Failed to resolve NetworkObjectReference on the client.");
+        }
+    }*/
+    private void SpawnAndCreatePLayerOnBoard(GameObject playerObjectPref, ulong clientId)
+    {
         Vector3 offset;
         GameObject playerObject;
+
+        Player newPlayer = playerObjectPref.GetComponent<Player>();
+        newPlayer.propertyPlayerID++;
+        newPlayer.moneyPlayer = startMoneyPlayer;
 
         if (playerPrefabs[choicePlayers[choicePlayersIndex]].CompareTag("Air"))
         {
@@ -328,7 +486,8 @@ public class GameController : NetworkBehaviour
             playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers,
                 startPositionPlayer.z + offset.z), startRotationPlayer);
 
-            players[choicePlayersIndex].playerPrefab = playerObject;//choicePlayersIndex потому что идет по порядку
+            newPlayer.playerPrefab = playerObject;
+
             playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
             Debug.Log("Air player spawned");
 
@@ -341,13 +500,18 @@ public class GameController : NetworkBehaviour
             playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
                 startPositionPlayer.z + offset.z), startRotationPlayer);
 
-            players[choicePlayersIndex].playerPrefab = playerObject;//choicePlayersIndex потому что идет по порядку
+            newPlayer.playerPrefab = playerObject;
+
             playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
             Debug.Log("Ground player spawned");
 
             //CreatePlayer(playerObject, offset, heightForGroundPlayers);
             countPlayersGround++;
         }
+
+        players.Add(newPlayer);
+        Debug.Log($"Player {newPlayer.propertyPlayerID} created.");
+
         choicePlayersIndex++;
 
         if (players.Count == NetworkManager.Singleton.ConnectedClientsList.Count)
