@@ -7,25 +7,25 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UniRx;
 using Unity.Netcode;
+using System.Globalization;
 
 public class Player : NetworkBehaviour
 {
     public static int playerCounter = 0;
-    private List<Card> citiesPlayer = new List<Card>();
 
     private ReactiveProperty<int> _moneyPlayer = new ReactiveProperty<int>();
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
 
     private int PhaseRentInfrastructure { get; set; } = 0;
     public bool Bankrupt { get; set; } = false;
-
+    public ulong clientIdPlayer { get; set; }
     public int moneyPlayer
     {
         get { return _moneyPlayer.Value; }
         set { _moneyPlayer.Value = value; }
     }
 
-    public bool isMoving { get; set; }
+    //public bool isMoving { get; set; }
 
     private int playerID;
     public int propertyPlayerID
@@ -40,8 +40,8 @@ public class Player : NetworkBehaviour
 
     public Vector3 playerOffSet { get; set; }
     public string playerName { get; set; }
-    private int currentPosition { get; set; } = 0;
-    public GameObject playerPrefab { get; set; }
+    private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
+    public GameObject playerPrefab;
     private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
     private void Awake()
     {
@@ -49,8 +49,24 @@ public class Player : NetworkBehaviour
     }
     public override void OnNetworkSpawn()
     {
-        currentPosition = 0;
+        //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
+        //MakeDefaultcurrentPositionServerRpc();
         //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
+    }
+    public void SetDefaultcurrentPosition()
+    {
+        currentPosition.Value = 0;
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void MakeDefaultcurrentPositionServerRpc()
+    {
+        currentPosition.Value = 0;
+        UpdateMakeDefaultcurrentPositionClientRpc();
+    }
+    [ClientRpc]
+    private void UpdateMakeDefaultcurrentPositionClientRpc()
+    {
+        currentPosition.Value = 0;
     }
     private void Update()
     {
@@ -67,20 +83,27 @@ public class Player : NetworkBehaviour
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
+        //Debug.Log("isOwner: " + IsOwner);
+        /*if (!IsOwner) 
+        {
+            Debug.Log("clientCurrent: " + NetworkManager.LocalClient.ClientId + " + clientOwner: " + clientIdPlayer);
+            yield break;
+        }*/
+
         float moveDuration = .7f;
 
         for (int i = 0; i < steps; i++)
         {
-            Debug.Log("pos: " + currentPosition);
+            //Debug.Log("pos: " + currentPosition.Value);
             Vector3 startPosition = playerPrefab.transform.position;
             float elapsedTime = 0f;
 
-            // Вычисляем следующую клетку (по кругу)
-            int nextPosition = currentPosition + 1;
+            int nextPosition = currentPosition.Value + 1;
             if (nextPosition == 40)
             {
                 nextPosition = 0;
             }
+
             Vector3 goTo = BoardController.Instance.GetBoardPosition(nextPosition);
 
             if (nextPosition == 0 || nextPosition == 20) //Для сохранения своей линии относительно клетки
@@ -92,7 +115,7 @@ public class Player : NetworkBehaviour
                 goTo.x = -startPositionPlayer.x;
             }
 
-            if (currentPosition == 0 || currentPosition == 10 || currentPosition == 20 || currentPosition == 30) //Обновление позиции рассчета имеено после предыдущих вычеслений
+            if (currentPosition.Value == 0 || currentPosition.Value == 10 || currentPosition.Value == 20 || currentPosition.Value == 30) //Обновление позиции рассчета имеено после предыдущих вычеслений
             {
                 startPositionPlayer = startPosition;
             }
@@ -117,13 +140,27 @@ public class Player : NetworkBehaviour
             }
 
             playerPrefab.transform.position = goTo;
-            currentPosition = nextPosition;
-            BoardController.Instance.CurrentPlayerPosition(currentPosition);
+            currentPosition.Value = nextPosition;
+            BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
 
-            //UpdatePositionServerRpc(transform.position,currentPosition);
+            //UpdatePlayerPositionClientRpc(goTo, currentPosition.Value);
         }
-        isMoving = false;
-        Debug.Log("currentPosition " + currentPosition);
+        //isMoving = false;
+        Debug.Log("currentPosition " + currentPosition.Value);
+    }
+    /*[ClientRpc]
+    private void UpdateCurrentPlayerPositionClientRpc(int value)
+    {
+        currentPosition.Value = value;
+        Vector3 goTo = BoardController.Instance.GetBoardPosition(value);
+        playerPrefab.transform.position = goTo;
+    }*/
+    [ClientRpc]
+    private void UpdatePlayerPositionClientRpc(Vector3 newPosition, int newCurrentPosition)
+    {
+        this.playerPrefab.transform.position = newPosition;
+        currentPosition.Value = newCurrentPosition;
+        BoardController.Instance.CurrentPlayerPosition(newCurrentPosition);
     }
     private void CheckIfPlayerIsCurrentPlayer(int moneyPlayerNew)
     {

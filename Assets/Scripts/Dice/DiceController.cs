@@ -74,26 +74,31 @@ public class DiceController : NetworkBehaviour
 
     public void WriteResultCubes()
     {
-        Debug.Log("W");
-        GameController.Instance.steps = cube1.GetComponent<DiceRoll>().result + cube2.GetComponent<DiceRoll>().result;
+        Debug.Log("WriteResultCubes");
+        GameController.Instance.SetStepsValueServerRpc(cube1.GetComponent<DiceRoll>().GetResult() + cube2.GetComponent<DiceRoll>().GetResult());
     }
+    [ServerRpc(RequireOwnership = false)]
+    public void MakeResultCubesDefaultServerRpc()
+    {
+        cube1.GetComponent<DiceRoll>().SetResultServerRpc(0);
+        cube2.GetComponent<DiceRoll>().SetResultServerRpc(0);
+    }
+    public IEnumerator DropDiceCoroutine(ulong localClientId)
+    {
+        MakeResultCubesDefaultServerRpc();
 
-    public void MakeResultCubesDefault()
-    {
-        cube1.GetComponent<DiceRoll>().result = 0;
-        cube2.GetComponent<DiceRoll>().result = 0;
-    }
-    public IEnumerator DropDiceCoroutine()
-    {
-        ulong localClientId = NetworkManager.Singleton.LocalClientId;
+        yield return new WaitForSeconds(0.1f);
+
+        Debug.Log("cube1 " + cube1.GetComponent<DiceRoll>().GetResult());
+        Debug.Log("cube2 " + cube2.GetComponent<DiceRoll>().GetResult());
+        //ulong localClientId = NetworkManager.Singleton.LocalClientId;
 
         DiceThrowServerRpc(new NetworkObjectReference(cube1), localClientId);
         DiceThrowServerRpc(new NetworkObjectReference(cube2), localClientId);
-
-        yield return new WaitUntil(() => cube1.GetComponent<DiceRoll>().result != 0 && cube2.GetComponent<DiceRoll>().result != 0);
-
+        Debug.Log("Wait for result");
+        yield return new WaitUntil(() => cube1.GetComponent<DiceRoll>().GetResult() != 0 && cube2.GetComponent<DiceRoll>().GetResult() != 0);
+        Debug.Log("Enough for result");
         WriteResultCubes();
-        MakeResultCubesDefault();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -105,10 +110,9 @@ public class DiceController : NetworkBehaviour
             Rigidbody rb = diceRoll.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                // Apply torque on the server
-                float x = Random.Range(-180, 180);
-                float y = Random.Range(-180, 180);
-                float z = Random.Range(-180, 180);
+                //float x = Random.Range(-180, 180);
+                //float y = Random.Range(-180, 180);
+                //float z = Random.Range(-180, 180);
 
                 float xForce = Random.Range(40, 70);
                 float yForce = Random.Range(40, 70);
@@ -116,8 +120,7 @@ public class DiceController : NetworkBehaviour
 
                 Vector3 randomTorque = new Vector3(xForce, yForce, zForce);
                 rb.AddTorque(randomTorque);
-
-                // Notify the client to start the calculation
+                Debug.Log("StartCalculationDiceThrow");
                 StartCalculationClientRpc(diceRef, clientId);
             }
         }
@@ -133,6 +136,7 @@ public class DiceController : NetworkBehaviour
         if (NetworkManager.Singleton.LocalClientId == clientId && diceRef.TryGet(out NetworkObject diceNetworkObject))
         {
             DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
+            Debug.Log("StartCalculationDiceThrowClientRpc -> Wait and Check");
             StartCoroutine(WaitAndCheckFace(diceRoll));
         }
     }
@@ -140,24 +144,25 @@ public class DiceController : NetworkBehaviour
     private IEnumerator WaitAndCheckFace(DiceRoll diceRoll)
     {
         yield return new WaitForSeconds(1.0f);
-
+        Debug.Log("Check for slow down cubes");
         while (diceRoll.GetComponent<Rigidbody>().angularVelocity.magnitude > 2.8f)
         {
             yield return null; // Ждем, пока кубик не замедлится
         }
-
-        diceRoll.SnapToClosestFace(diceRoll, camera.transform.rotation.eulerAngles.x);
-
-        SendResultToServerServerRpc(diceRoll.NetworkObject, diceRoll.result);
+        Debug.Log("Go to dice roll");
+        diceRoll.SnapToClosestFaceServerRpc(camera.transform.rotation.eulerAngles.x);
+        Debug.Log("Back from dice roll");
+        //yield return new WaitUntil(() => diceRoll.GetResult() != 0);
+        //SendResultToServerServerRpc(diceRoll.NetworkObject, diceRoll.GetResult());
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    /*[ServerRpc(RequireOwnership = false)]
     public void SendResultToServerServerRpc(NetworkObjectReference diceRef, int result)
     {
         if (diceRef.TryGet(out NetworkObject diceNetworkObject))
         {
             DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
-            diceRoll.result = result;
+            diceRoll.SetResultServerRpc(result);
 
             Debug.Log($"Dice result updated {result} on host");
 
@@ -171,9 +176,9 @@ public class DiceController : NetworkBehaviour
         if (diceRef.TryGet(out NetworkObject diceNetworkObject))
         {
             DiceRoll diceRoll = diceNetworkObject.GetComponent<DiceRoll>();
-            diceRoll.result = result;
+            diceRoll.SetResultServerRpc(result);
 
             Debug.Log($"Dice result updated {result} on client");
         }
-    }
+    }*/
 }
