@@ -18,7 +18,6 @@ public class Player : NetworkBehaviour
 
     private int PhaseRentInfrastructure { get; set; } = 0;
     public bool Bankrupt { get; set; } = false;
-    public ulong clientIdPlayer { get; set; }
     public int moneyPlayer
     {
         get { return _moneyPlayer.Value; }

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -6974525759786753088}
   - component: {fileID: 4565062719798376813}
   - component: {fileID: 4007065002599001061}
-  - component: {fileID: -4868133764360264079}
+  - component: {fileID: 6088712911866940614}
   m_Layer: 0
   m_Name: Ballon_3
   m_TagString: Air
@@ -31,7 +31,7 @@ Transform:
   m_GameObject: {fileID: 8444041543326102428}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.338192, y: 0, z: -6.0001945}
+  m_LocalPosition: {x: -1.8955022, y: 0, z: -6.0001945}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -141,7 +141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebe463238bddc054282595d1887db7d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-4868133764360264079
+--- !u!114 &6088712911866940614
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -158,8 +158,8 @@ MonoBehaviour:
   SyncPositionY: 1
   SyncPositionZ: 1
   SyncRotAngleX: 1
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 1
+  SyncRotAngleY: 0
+  SyncRotAngleZ: 0
   SyncScaleX: 0
   SyncScaleY: 0
   SyncScaleZ: 0

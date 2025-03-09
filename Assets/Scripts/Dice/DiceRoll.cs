@@ -20,47 +20,28 @@ public class DiceRoll : NetworkBehaviour
         return _result;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void SetResultServerRpc(int newResult)
+    public void SetResult(int newResult)
     {
         _result = newResult;
-        SetResultClientRpc(newResult);
-        Debug.Log("S res: " + _result);
     }
-    [ClientRpc]
-    private void SetResultClientRpc(int newResult)
-    {
-        _result = newResult;
-        Debug.Log("C res: " + newResult);
-    }
+
     public void InitializeDicePlate(GameObject gameObject)
     {
         dicePlate = gameObject;
     }
-    [ServerRpc(RequireOwnership = false)]
-    public void SnapToClosestFaceServerRpc(float camera)
-    {
-        Debug.Log("SnapToClosestFaceServerRpc");
-        //rb = GetComponent<Rigidbody>();
-        //rb.isKinematic = true; // Отключаем физику перед докручиванием
 
-        Vector3 target = RandomEdgeCubik(camera); 
-        //Quaternion targetRotation = Quaternion.Euler(target.x, target.y, target.z);
-
-        SnapToClosestFaceClientRpc(target);
-    }
-    [ClientRpc]
-    private void SnapToClosestFaceClientRpc(Vector3 target)
+    public void SnapToClosestFace(float camera)
     {
-        Debug.Log("SnapToClosestFaceClientRpc");
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true; // Отключаем физику перед докручиванием
+
+        Vector3 target = RandomEdgeCubik(camera); 
         Quaternion targetRotation = Quaternion.Euler(target.x, target.y, target.z);
-        StartCoroutine(RotateSmooth(targetRotation));
+        StartCoroutine(RotateSmooth(targetRotation));//
     }
+
     private IEnumerator RotateSmooth(Quaternion targetRotation)
     {
-        Debug.Log("StartRotateSmooth");
         Quaternion startRotation = transform.rotation;
         float duration = 0.8f; // Плавность
         float elapsedTime = 0f;
@@ -77,7 +58,6 @@ public class DiceRoll : NetworkBehaviour
 
         transform.rotation = targetRotation; // Финальное исправление
         rb.isKinematic = false;
-        Debug.Log("EndStartRotateSmooth");
     }
     private Vector3 RandomEdgeCubik(float cameraAngl)
     {
@@ -113,10 +93,7 @@ public class DiceRoll : NetworkBehaviour
         res1Index++; res2Index++;
         result += res1Index + "" + res2Index;
         int resultInt = int.Parse(result);
-        //Debug.Log("client: " + NetworkManager.LocalClient.ClientId);
-        SetResultServerRpc(res1Index);//this?
-        //Debug.Log($"Выбраны грани: {res1Index}, {res2Index} -> {resultInt}");
-
+        SetResult(res1Index);
         Dictionary<int, Vector3> edgeAnglesDict = new Dictionary<int, Vector3>()
         {
             {12, new Vector3(-165 + cameraAngle, 0, 0)},//1 2 4 //
@@ -144,7 +121,7 @@ public class DiceRoll : NetworkBehaviour
             {63, new Vector3(165 - cameraAngle, 180, -90)},//6 3 5
             {65, new Vector3(165 - cameraAngle, 180, -180)}//6 5 4
         };
-        Debug.Log("RandomEdgeCubik");
+
         return edgeAnglesDict[resultInt];
     }
 }

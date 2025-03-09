@@ -246,13 +246,11 @@ public class GameController : NetworkBehaviour
             NextPlayerTurnServerRpc();
         }
     }
-
     [ServerRpc(RequireOwnership = false)]
     public void MoveCurrentPlayerServerRpc(int steps)
     {
         StartCoroutine(MoveCurrentPlayerCoroutine(steps));
     }
-
     private IEnumerator MoveCurrentPlayerCoroutine(int steps)
     {
         //players[playerIndex].isMoving = true;
@@ -353,15 +351,9 @@ public class GameController : NetworkBehaviour
         return 5;
     }
 
-    /*[ServerRpc(RequireOwnership = false)]
-    public void RequestPlayerCountServerRpc()
-    {
-        CountNetworkClients = NetworkManager.Singleton.ConnectedClientsList.Count;
-    }*/
     [ServerRpc]
     private void VerifyAllClientsConnectedServerRpc(ulong clientid)
     {
-        //RequestPlayerCountServerRpc();
         if (choicePlayers.Length == NetworkManager.Singleton.ConnectedClientsList.Count)
         {
             CreatePLayersServerRpc();
@@ -370,15 +362,13 @@ public class GameController : NetworkBehaviour
     [ServerRpc]
     private void CreatePLayersServerRpc()
     {
-        int index = 0;
         for (int i = 0; i < choicePlayers.Length; i++)
         {
-            CreatePlayersAndAddToListServerRpc(choicePlayers[i], NetworkManager.Singleton.ConnectedClientsList[index].ClientId);
-            index++;
+            CreatePlayersAndAddToListServerRpc(choicePlayers[i]);
         }
     }
     [ServerRpc]
-    private void CreatePlayersAndAddToListServerRpc(int index, ulong clientId)
+    private void CreatePlayersAndAddToListServerRpc(int index)
     {
         Vector3 offset;
         GameObject playerObject;
@@ -387,7 +377,7 @@ public class GameController : NetworkBehaviour
         newPlayer.propertyPlayerID++;
         newPlayer.moneyPlayer = startMoneyPlayer;
         newPlayer.SetDefaultcurrentPosition();
-        newPlayer.clientIdPlayer = clientId;
+        //newPlayer.clientIdPlayer = clientId;
 
         if (playerPrefabs[choicePlayers[choicePlayersIndex]].CompareTag("Air"))
         {
@@ -395,7 +385,7 @@ public class GameController : NetworkBehaviour
             playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForAirPlayers,
                 startPositionPlayer.z + offset.z), startRotationPlayer);
 
-            playerObject.GetComponent<NetworkObject>().SpawnWithOwnership(clientId);
+            playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
 
             Debug.Log("Air player spawned Server");
             //CreatePlayer(playerObject, offset, heightForAirPlayers);
@@ -408,7 +398,7 @@ public class GameController : NetworkBehaviour
             playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
                 startPositionPlayer.z + offset.z), startRotationPlayer);
 
-            playerObject.GetComponent<NetworkObject>().SpawnWithOwnership(clientId);
+            playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
 
             Debug.Log("Ground player spawned Server");
             //CreatePlayer(playerObject, offset, heightForGroundPlayers);
@@ -423,18 +413,13 @@ public class GameController : NetworkBehaviour
         players.Add(newPlayer);
     }
 
-    /*[ClientRpc]
-    private void SyncPlayersListClientRpc(int id, int money)
+/*    [ClientRpc]
+    private void SyncPlayersListClientRpc(NetworkObjectReference networkObjectReference)
     {
-        //players.Clear();
-        Player newPlayer = new Player
+        if (networkObjectReference.TryGet(out NetworkObject diceNetworkObject))
         {
-            propertyPlayerID = id,
-            moneyPlayer = money,
-            // playerPrefab = playerData.playerPrefab,
-        };
-
-        players.Add(newPlayer);
+            players = diceNetworkObject;
+        }
 
         Debug.Log("Список игроков синхронизирован на клиенте.");
     }*/
@@ -453,7 +438,7 @@ public class GameController : NetworkBehaviour
             if (IsHost)
             {
                 Debug.Log("Все игроки подключены. Начинаем игру!");
-                DiceController.Instance.SpawnCubesServeServerRpc();
+                DiceController.Instance.SpawnCubes();
                 btnTurnController(1);
             }
         }
