@@ -133,8 +133,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toolTipPrefab: {fileID: 5205173924716506528, guid: 584400a2418571c43968ca3e84868ebe,
-    type: 3}
 --- !u!1 &6495495787817980213
 GameObject:
   m_ObjectHideFlags: 0
@@ -268,8 +266,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toolTipPrefab: {fileID: 3009097916840622546, guid: d2931ed2ad668a347a467cd22916bdaa,
-    type: 3}
 --- !u!1 &7628197022067301793
 GameObject:
   m_ObjectHideFlags: 0
@@ -403,8 +399,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88f5efda4ace5594380c2f72ab389a6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toolTipPrefab: {fileID: 3527458172870187851, guid: 714db3e7496c3ae4190fedc971c6e3e1,
-    type: 3}
 --- !u!1 &7651870024787398855
 GameObject:
   m_ObjectHideFlags: 0
@@ -416,6 +410,7 @@ GameObject:
   - component: {fileID: 5307750230634762068}
   - component: {fileID: 6926405228954276791}
   - component: {fileID: 2650897370180082686}
+  - component: {fileID: -4292796687468923051}
   m_Layer: 5
   m_Name: PanelUpgradeDemoteSell
   m_TagString: cardInfoPref
@@ -484,6 +479,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &-4292796687468923051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7651870024787398855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
 --- !u!1 &8269360316532654780
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,29 +7,28 @@ using UnityEngine.SceneManagement;
 public enum Scenes
 {
     Menu,
-    GameBoard
+    GameBoard,
+    Lobby
 };
 
-public class LevelManager : MonoBehaviour
+public class SceneManager : MonoBehaviour
 {
-    [SerializeField] private GameObject settingsWindow;
     [SerializeField] private GameObject loadingScreen;
-    [SerializeField] private GameObject startGameOptions;
     [SerializeField] private Slider slider;
 
     private static float _fadeSpeed = 0.02f;
     private static Color _fadeTransperancy = new Color(0, 0, 0, 0.1f);
     private static AsyncOperation _asyncOperation;
 
-    public static LevelManager Instance;
+    public static SceneManager Instance;
     public GameObject _faderObj;
     public Image _faderImg;
     void Start()
     {
+        //PlayScene(Scenes.Menu);
         //DontDestroyOnLoad(this);
         Instance = this;
-        SceneManager.sceneLoaded += OnLevelFinishedLoading;
-        //PlayScene(Scenes.Menu);
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnLevelFinishedLoading;
     }
 
     public static void PlayScene(Scenes sceneEnum)
@@ -77,7 +76,7 @@ public class LevelManager : MonoBehaviour
         _asyncOperation.allowSceneActivation = false;
         yield return _asyncOperation;*/
 
-        _asyncOperation = SceneManager.LoadSceneAsync(sceneName);
+        _asyncOperation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
         _asyncOperation.allowSceneActivation = false;
 
         Instance.loadingScreen.SetActive(true);
@@ -96,20 +95,4 @@ public class LevelManager : MonoBehaviour
         _asyncOperation.allowSceneActivation = true;
     }
 }
-    /*public void Loadlevel(int sceneIndex)
-    {
-        StartCoroutine(loadAscyncronosly(sceneIndex));
-    }
-
-    private IEnumerator loadAscyncronosly(int sceneIndex)
-    {
-        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
-        loadingScreen.SetActive(true);
-        while (operation.isDone == false)
-        {
-            float progress = operation.progress;
-            slider.value = progress;
-            yield return null;
-        }
-    }*/
 

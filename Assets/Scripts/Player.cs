@@ -11,20 +11,16 @@ using System.Globalization;
 
 public class Player : NetworkBehaviour
 {
-    public static int playerCounter = 0;
 
     private ReactiveProperty<int> _moneyPlayer = new ReactiveProperty<int>();
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
+    private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
 
-    private int PhaseRentInfrastructure { get; set; } = 0;
-    public bool Bankrupt { get; set; } = false;
     public int moneyPlayer
     {
         get { return _moneyPlayer.Value; }
         set { _moneyPlayer.Value = value; }
     }
-
-    //public bool isMoving { get; set; }
 
     private int playerID;
     public int propertyPlayerID
@@ -37,15 +33,19 @@ public class Player : NetworkBehaviour
         }
     }
 
+    public GameObject playerPrefab;
+    public static int playerCounter = 0;
+    private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
+    private int PhaseRentInfrastructure { get; set; } = 0;
+    public bool Bankrupt { get; set; } = false;
     public Vector3 playerOffSet { get; set; }
     public string playerName { get; set; }
-    private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
-    public GameObject playerPrefab;
-    private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
+
     private void Awake()
     {
         startPositionPlayer = transform.position;
     }
+
     public override void OnNetworkSpawn()
     {
         //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");

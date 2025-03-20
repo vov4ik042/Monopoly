@@ -3534,7 +3534,7 @@ MonoBehaviour:
   dicePlate1: {fileID: 1268146260}
   dicePlate2: {fileID: 1179078095}
   diceParent: {fileID: 1413594137}
-  camera: {fileID: 330585545}
+  cam: {fileID: 330585545}
   _sumResult: 0
 --- !u!114 &847777593
 MonoBehaviour:
@@ -7988,7 +7988,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1741008857
 Transform:
   m_ObjectHideFlags: 0

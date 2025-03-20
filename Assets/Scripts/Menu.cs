@@ -7,8 +7,8 @@ using UnityEngine.SceneManagement;
 public class Menu : MonoBehaviour
 {
     [SerializeField] private SettingsWindow settingsWindow;
+    [SerializeField] private About aboutWindow;
     //[SerializeField] private GameObject loadingScreen;
-    [SerializeField] private GameObject startGameOptions;
     //[SerializeField] private Slider slider;
 
     [SerializeField] private Button buttonStart;
@@ -26,17 +26,17 @@ public class Menu : MonoBehaviour
 
     public void PLayClick()
     {
-        startGameOptions.SetActive(true);
+        SceneManager.PlayScene(Scenes.Lobby);
     }
 
     public void AboutClick()
     {
-
+        aboutWindow.OpenWindow();
     }
 
     public void SettingsClick()
     {
-        settingsWindow.OpenWindow(settingsWindow);
+        settingsWindow.OpenWindow();
     }
 
     public void Exit()

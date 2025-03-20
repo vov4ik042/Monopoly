@@ -49,6 +49,7 @@ public class GameController : NetworkBehaviour
     private ReactiveProperty<int> steps = new ReactiveProperty<int>();//Кол-во клеток перемещения
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
     // private int steps;//Кол-во клеток перемещения
+    private Player cachedCurrentPlayer; // Кэш для клиента
 
     private void OnEnable()
     {
@@ -128,7 +129,49 @@ public class GameController : NetworkBehaviour
             btnTurnController(4);
         }
     }
-    public Player GetCurrentPlayer() => players[currentPlayerIndex.Value];
+
+    public Player GetCurrentPlayer()
+    {
+        if (IsHost)
+        {
+            return players[currentPlayerIndex.Value];
+        }
+        else
+        {
+            RequestCurrentPlayerServerRpc();
+            return cachedCurrentPlayer;
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestCurrentPlayerServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (players.Count == 0) return;
+
+        Player currentPlayer = players[currentPlayerIndex.Value];
+
+        if (currentPlayer.TryGetComponent(out NetworkObject networkObject))
+        {
+            SendCurrentPlayerClientRpc(new NetworkObjectReference(networkObject), rpcParams.Receive.SenderClientId);
+        }
+        else
+        {
+            Debug.Log("Err");
+        }
+    }
+
+    [ClientRpc]
+    private void SendCurrentPlayerClientRpc(NetworkObjectReference playerRef, ulong clientId)
+    {
+        if (playerRef.TryGet(out NetworkObject playerNew))
+        {
+            if (NetworkManager.Singleton.LocalClientId == clientId)
+            {
+                cachedCurrentPlayer = playerNew.GetComponent<Player>();
+            }
+        }
+    }
+
     private void ColorsGaveForPlayers()
     {
         colorPlayers.Add(Color.red);
@@ -187,6 +230,7 @@ public class GameController : NetworkBehaviour
                 }
         }
     }
+
     [ServerRpc(RequireOwnership = false)]
     private void RollTheDicesServerRpc()
     {

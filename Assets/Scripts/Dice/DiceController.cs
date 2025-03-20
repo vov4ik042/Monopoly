@@ -10,12 +10,14 @@ public class DiceController : NetworkBehaviour
     [SerializeField] private GameObject dicePlate1;
     [SerializeField] private GameObject dicePlate2;
     [SerializeField] private GameObject diceParent;
-    [SerializeField] private Camera camera;
+    [SerializeField] private Camera cam;
 
     private GameObject cube1;
     private GameObject cube2;
 
-    private int cubeCount = 1;// Для понимания какой кубик
+    private Vector3 baseScale; // Исходный размер кубов
+    private int lastScreenWidth;
+    private int lastScreenHeight;
 
     public int _sumResult;
     private int sumResult 
@@ -29,6 +31,43 @@ public class DiceController : NetworkBehaviour
             _sumResult = value;
         }
     }
+
+    private void RememberCubePosition()
+    {
+        baseScale = cube1.transform.localScale; // Запоминаем базовый размер
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+    }
+
+    private void Update()
+    {
+        if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
+        {
+            lastScreenWidth = Screen.width;
+            lastScreenHeight = Screen.height;
+            UpdateCubes();
+        }
+    }
+
+    private void UpdateCubes()
+    {
+        if (cam == null || cube1 == null || cube2 == null) return;
+
+        // Получаем верхний левый угол в мировых координатах
+        Vector3 topLeft = cam.ScreenToWorldPoint(new Vector3(0, Screen.height, cam.nearClipPlane + 5));
+
+        // Устанавливаем кубы относительно верхнего левого угла с фиксированным отступом
+        float offsetX = 1.0f; // Отступ от левого края
+        float offsetY = -1.0f; // Отступ от верхнего края
+        cube1.transform.position = topLeft + new Vector3(offsetX, offsetY, 0);
+        cube2.transform.position = topLeft + new Vector3(offsetX + 1.0f, offsetY - 1.0f, 0); // Чуть ниже второго
+
+        // Масштабирование кубов относительно ширины экрана
+        float scaleFactor = Mathf.Clamp(Screen.width / 1920f, 0.5f, 1f);
+        cube1.transform.localScale = baseScale * scaleFactor;
+        cube2.transform.localScale = baseScale * scaleFactor;
+    }
+
     private void Awake()
     {
         Instance = this;
@@ -49,6 +88,8 @@ public class DiceController : NetworkBehaviour
         cube2.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate2);
         NetworkObject cube2NetworkObject = cube2.GetComponent<NetworkObject>();
         cube2NetworkObject.Spawn();
+
+        RememberCubePosition();
     }
 
     public void WriteResultCubes()
@@ -108,6 +149,6 @@ public class DiceController : NetworkBehaviour
             yield return null; // Ждем, пока кубик не замедлится
         }
 
-        diceRoll.SnapToClosestFace(camera.transform.rotation.eulerAngles.x);
+        diceRoll.SnapToClosestFace(cam.transform.rotation.eulerAngles.x);
     }
 }

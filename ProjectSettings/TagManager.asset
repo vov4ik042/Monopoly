@@ -7,6 +7,7 @@ TagManager:
   - Air
   - Ground
   - cardInfoPref
+  - CardBoardTextField
   layers:
   - Default
   - TransparentFX

@@ -9,8 +9,9 @@ using System;
 using Unity.VisualScripting;
 using UnityEngine.EventSystems;
 using UniRx;
+using Unity.Netcode;
 
-public class BoardController : MonoBehaviour
+public class BoardController : NetworkBehaviour
 {
     [SerializeField] private GameObject[] cardPrefCountries;
     [SerializeField] private GameObject[] cardPrefInfrastructures;
@@ -56,11 +57,14 @@ public class BoardController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            ShowOrHideCardInfo();
+            if (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.LocalClientId)
+            {
+                ShowOrHideCardInfo();
+            }
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         _compositeDisposable.Dispose();
     }
@@ -200,19 +204,18 @@ public class BoardController : MonoBehaviour
             { 37, new Card("Houten", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200) },
             { 39, new Card("Amsterdam", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200) },
         };*/
-    } 
-
+    }
     private void ShowOrHideCardInfo()
     {
-        if (IsPointerOverUI())//Проверяем, был ли клик по UI
+        if (!IsPointerOverUIWithTag("CardBoardTextField") && IsPointerOverUI())//Проверяем, был ли клик по UI
         {
             if (IsPointerOverUIWithTag("cardInfoPref"))
             {
-                //Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
+                Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
                 return;
             }
 
-            //Debug.Log("Клик по UI — скрываем карту");
+            Debug.Log("Клик по UI — скрываем карту");
             if (currentCardOpenInfo != null)
             {
                 DeleteCardInfo();
@@ -230,7 +233,7 @@ public class BoardController : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit))
             {
-                //Debug.Log("hit " + hit);
+                Debug.Log("hit " + hit);
                 Card cardCountry = hit.collider.gameObject.GetComponent<Card>();
                 if (cardCountry != null)
                 {
@@ -311,7 +314,7 @@ public class BoardController : MonoBehaviour
 
         foreach (RaycastResult result in results)
         {
-            if (result.gameObject.CompareTag(tag)) // Проверяем тег
+            if (result.gameObject.CompareTag(tag))
             {
                 return true; // Нашли объект с нужным тегом
             }

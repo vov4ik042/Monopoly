@@ -55,9 +55,9 @@ public class SettingsWindow : MonoBehaviour
         }
     }
 
-    public void OpenWindow(SettingsWindow settingsWindow)
+    public void OpenWindow()
     {
-        settingsWindow.gameObject.SetActive(true);
+        this.gameObject.SetActive(true);
     }
 
     private void CloseWindow()
