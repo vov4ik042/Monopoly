@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 
 public enum Scenes
 {
     Menu,
     GameBoard,
-    Lobby
+    Lobby,
+    CharacterSelect
 };
 
 public class SceneManager : MonoBehaviour
@@ -23,17 +25,29 @@ public class SceneManager : MonoBehaviour
     public static SceneManager Instance;
     public GameObject _faderObj;
     public Image _faderImg;
-    void Start()
+    private void Start()
     {
-        //PlayScene(Scenes.Menu);
-        //DontDestroyOnLoad(this);
-        Instance = this;
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnLevelFinishedLoading;
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+        //UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnLevelFinishedLoading;///////////////////////
     }
 
     public static void PlayScene(Scenes sceneEnum)
     {
-        Instance.LoadScene(sceneEnum.ToString());
+        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneEnum.ToString());
+        //Instance.LoadScene(sceneEnum.ToString());////////////////////
+    }
+    public static void PlaySceneNetwork(Scenes sceneEnum)
+    {
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneEnum.ToString(), LoadSceneMode.Single);
     }
 
     private void LoadScene(string sceneName)

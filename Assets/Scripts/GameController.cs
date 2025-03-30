@@ -8,6 +8,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using UniRx;
+using System.Linq;
 public class GameController : NetworkBehaviour
 {
     [SerializeField] private GameObject[] playerPrefabs = new GameObject[8]; //Условный список всех игроков (обьектов)
@@ -82,6 +83,7 @@ public class GameController : NetworkBehaviour
         BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
         if (IsHost)
         {
+            //NetworkManager.Singleton.SceneManager.OnLoadEventComplete += SceneManager_OnLoadEventComplete; 3:43;28
             NetworkManager.Singleton.OnClientConnectedCallback += VerifyAllClientsConnectedServerRpc;
             players.CollectionChanged += OnPlayersChanged;
         }
@@ -118,9 +120,9 @@ public class GameController : NetworkBehaviour
     }
     private void OnTurnChanged(int previousValue, int newValue)
     {
-        if ((ulong)newValue == NetworkManager.Singleton.LocalClientId)
+        if (IsMyTurn())
         {
-            Debug.Log("Мой ход! Показать кнопку.");
+            Debug.Log("Мой ход.");
             btnTurnController(1);
         }
         else
@@ -234,25 +236,29 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RollTheDicesServerRpc()
     {
+        ViewCurrentButtonForClientRpc();
         StartCoroutine(RollTheDicesCoroutine());
     }
-
-    private IEnumerator RollTheDicesCoroutine()
+    [ClientRpc]
+    private void ViewCurrentButtonForClientRpc()
     {
         if (IsMyTurn())
         {
             Debug.Log("My turn in rolldices");
             btnTurnController(4);
-            //bool previousPlayer = currentPlayerIndex.Value == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerIndex.Value - 1].isMoving;
-            //if (previousPlayer)
-            //{
-            //}
+            /*bool previousPlayer = currentPlayerIndex.Value == 0 ? !players[players.Count - 1].isMoving : !players[currentPlayerIndex.Value - 1].isMoving;
+            if (previousPlayer)
+            {
+            }*/
         }
         else
         {
             Debug.Log("Not my turn in rolldices");
         }
+    }
 
+    private IEnumerator RollTheDicesCoroutine()
+    {
         yield return StartCoroutine(DiceController.Instance.DropDiceCoroutine(NetworkManager.LocalClient.ClientId));
 
         /*if (CanPlayerMove == true)
@@ -318,7 +324,7 @@ public class GameController : NetworkBehaviour
                 typeButtonTurn = CanPLayerBuyOrNot(sum);
             }
 
-            //UpdateButtonTextClientRpc(sum, typeButtonTurn);
+            UpdateButtonTextClientRpc(sum, typeButtonTurn);
         }
         else
         {
@@ -338,8 +344,8 @@ public class GameController : NetworkBehaviour
             }
 
             typeButtonTurn = 3;
-            //UpdateButtonTextClientRpc(0, typeButtonTurn);
-            btnTurnController(typeButtonTurn);
+            UpdateButtonTextClientRpc(0, typeButtonTurn);
+            //btnTurnController(typeButtonTurn);
         }
     }
 
@@ -431,7 +437,7 @@ public class GameController : NetworkBehaviour
 
             playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
 
-            Debug.Log("Air player spawned Server");
+            //Debug.Log("Air player spawned Server");
             //CreatePlayer(playerObject, offset, heightForAirPlayers);
 
             countPlayersAir++;
@@ -444,7 +450,7 @@ public class GameController : NetworkBehaviour
 
             playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
 
-            Debug.Log("Ground player spawned Server");
+            //Debug.Log("Ground player spawned Server");
             //CreatePlayer(playerObject, offset, heightForGroundPlayers);
 
             countPlayersGround++;
@@ -456,17 +462,6 @@ public class GameController : NetworkBehaviour
         //SyncPlayersListClientRpc(newPlayer.propertyPlayerID, newPlayer.moneyPlayer);
         players.Add(newPlayer);
     }
-
-/*    [ClientRpc]
-    private void SyncPlayersListClientRpc(NetworkObjectReference networkObjectReference)
-    {
-        if (networkObjectReference.TryGet(out NetworkObject diceNetworkObject))
-        {
-            players = diceNetworkObject;
-        }
-
-        Debug.Log("Список игроков синхронизирован на клиенте.");
-    }*/
 
     private void OnPlayersChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
@@ -483,8 +478,20 @@ public class GameController : NetworkBehaviour
             {
                 Debug.Log("Все игроки подключены. Начинаем игру!");
                 DiceController.Instance.SpawnCubes();
-                btnTurnController(1);
+                GiveFirstPlayerButtonClientRpc();
             }
+        }
+    }
+    [ClientRpc]
+    private void GiveFirstPlayerButtonClientRpc()
+    {
+        if (!IsClient) return;
+
+        ulong firstPlayerId = NetworkManager.Singleton.ConnectedClients.Keys.First();
+
+        if (NetworkManager.LocalClient.ClientId == firstPlayerId)
+        {
+            btnTurnController(1);
         }
     }
 

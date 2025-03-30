@@ -18,12 +18,19 @@ public class Menu : MonoBehaviour
 
     private void Awake()
     {
+        MainMenuClearUp();
         buttonStart.onClick.AddListener(PLayClick);
         buttonSettings.onClick.AddListener(SettingsClick);
         buttonAbout.onClick.AddListener(AboutClick);
         buttonExit.onClick.AddListener(Exit);
     }
-
+    private void MainMenuClearUp()//Когда выходят из лобби например
+    {
+        if (MonopolyLobby.Instance != null)
+        {
+            Destroy(MonopolyLobby.Instance.gameObject);
+        }
+    }
     public void PLayClick()
     {
         SceneManager.PlayScene(Scenes.Lobby);
