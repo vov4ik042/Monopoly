@@ -6,10 +6,11 @@ public class CharacterSelectPlayer : MonoBehaviour
 {
     [SerializeField] private int player_index;
     [SerializeField] private GameObject readyGameObject;
+    [SerializeField] private PlayerVisual playerVisual;
 
     private void Start()
     {
-        MonopolyLobby.Instance.OnPlayerDataNetworkListChange += MonopolyLobby_OnPlayerDataNetworkListChange;
+        MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged += MonopolyLobby_OnPlayerDataNetworkListChange;
         CharacterSelectUI.Instance.OnReadyChange += CharacterSelectUI_OnReadyChange;
         UpdatePlayer();
     }
@@ -26,13 +27,15 @@ public class CharacterSelectPlayer : MonoBehaviour
     
     private void UpdatePlayer()
     {
-        if (MonopolyLobby.Instance.IsPlayerIndexConnected(player_index))
+        if (MonopolyMultiplayer.Instance.IsPlayerIndexConnected(player_index))
         {
             Show();
 
-            PlayerData playerData = MonopolyLobby.Instance.GetPlayerDataFromPlayerIndex(player_index);
+            PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(player_index);
 
             readyGameObject.SetActive(CharacterSelectUI.Instance.IsPlayerReady(playerData.clientId));
+
+            playerVisual.SetPlayerColor(MonopolyMultiplayer.Instance.GetPlayerColor(playerData.colorId));
         }
         else
         {
@@ -51,9 +54,10 @@ public class CharacterSelectPlayer : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (MonopolyLobby.Instance != null)
+        if (MonopolyMultiplayer.Instance != null)
         {
-            MonopolyLobby.Instance.OnPlayerDataNetworkListChange -= MonopolyLobby_OnPlayerDataNetworkListChange;
+            MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged -= MonopolyLobby_OnPlayerDataNetworkListChange;
+            CharacterSelectUI.Instance.OnReadyChange -= CharacterSelectUI_OnReadyChange;
         }
     }
 

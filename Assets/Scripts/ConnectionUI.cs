@@ -6,8 +6,8 @@ public class ConnectionUI : MonoBehaviour
 {
     private void Start()
     {
-        MonopolyLobby.Instance.OnTryingToJoinGame += MonopolyLobby_OnTryingToJoinGame;
-        MonopolyLobby.Instance.OnFailedToJoinGame += MonopolyLobby_OnFailedToJoinGame;
+        MonopolyMultiplayer.Instance.OnTryingToJoinGame += MonopolyLobby_OnTryingToJoinGame;
+        MonopolyMultiplayer.Instance.OnFailedToJoinGame += MonopolyLobby_OnFailedToJoinGame;
 
         Hide();
     }
@@ -32,7 +32,7 @@ public class ConnectionUI : MonoBehaviour
     }
     private void OnDestroy()
     {
-        MonopolyLobby.Instance.OnTryingToJoinGame -= MonopolyLobby_OnTryingToJoinGame;
-        MonopolyLobby.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
+        MonopolyMultiplayer.Instance.OnTryingToJoinGame -= MonopolyLobby_OnTryingToJoinGame;
+        MonopolyMultiplayer.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
     }
 }//надо проверить

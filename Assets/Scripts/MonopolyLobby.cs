@@ -21,17 +21,10 @@ public class MonopolyLobby : NetworkBehaviour
     [SerializeField] private GameObject CreateLobbyPublicPrivate;
     [SerializeField] private TextMeshProUGUI lobbyCodeInput;
 
-    private int MaxPlayersNumber = 6;
     public static MonopolyLobby Instance { get; private set; }
-
+    private int MaxPlayersNumber = 6;
     private Lobby joinedLobby;
     private float heartbeatTimer;
-
-    private NetworkList<PlayerData> playerDataNetworkList;
-
-    public event EventHandler OnTryingToJoinGame;
-    public event EventHandler OnFailedToJoinGame;
-    public event EventHandler OnPlayerDataNetworkListChange;
 
     /*private Lobby hostLobby;
     private float lobbyUpdateTimer;
@@ -41,7 +34,9 @@ public class MonopolyLobby : NetworkBehaviour
     private void Awake()
     {
         Instance = this;
+
         DontDestroyOnLoad(gameObject);
+
         InitializeAuthentication();
 
         createLobbyButton.onClick.AddListener(() =>
@@ -62,46 +57,15 @@ public class MonopolyLobby : NetworkBehaviour
 
     private void Start()
     {
-        playerDataNetworkList = new NetworkList<PlayerData>();
-        playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
-    }
-
-    private void PlayerDataNetworkList_OnListChanged(NetworkListEvent<PlayerData> changeEvent)
-    {
-        OnPlayerDataNetworkListChange?.Invoke(this, EventArgs.Empty);
+        //playerDataNetworkList = new NetworkList<PlayerData>();
+        //playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
     }
 
     private void Update()
     {
         HandleLobbyHeartBeat();
         //HandleLobbyPollForUpdates();
-    }
-
-    private void StartClient()
-    {
-        OnTryingToJoinGame?.Invoke(this, EventArgs.Empty);
-
-        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_OnClientDisconnectCallback;
-        NetworkManager.Singleton.StartClient();
-    }
-
-    private void NetworkManager_OnClientDisconnectCallback(ulong clientId)
-    {
-        OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void StartHost()
-    {
-        NetworkManager.Singleton.ConnectionApprovalCallback += NewworkManager_ConnectionApprovalCallback;
-        NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_OnClientConnectedCallback;
-        NetworkManager.Singleton.StartHost();
-    }
-
-    private void NetworkManager_OnClientConnectedCallback(ulong obj)
-    {
-        playerDataNetworkList.Add(new PlayerData {
-            clientId = obj
-        });
+        Debug.Log(Instance);
     }
 
     private async void InitializeAuthentication()
@@ -127,7 +91,7 @@ public class MonopolyLobby : NetworkBehaviour
             });
             Debug.Log("Create lobby! " + joinedLobby.Name + " " + joinedLobby.MaxPlayers + " " + joinedLobby.Id + " " + joinedLobby.LobbyCode);
 
-            StartHost();
+            MonopolyMultiplayer.Instance.StartHost();
 
             SceneManager.PlaySceneNetwork(Scenes.CharacterSelect);
         } catch (LobbyServiceException ex)
@@ -136,33 +100,13 @@ public class MonopolyLobby : NetworkBehaviour
         }
     }
 
-    private void NewworkManager_ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest connectionApprovalRequest,
-        NetworkManager.ConnectionApprovalResponse connectionApprovalResponse)//3:45:35//Destroy object 1:57:00
-    {
-        //3:26:38
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != Scenes.CharacterSelect.ToString())
-        {
-            connectionApprovalResponse.Approved = false;
-            connectionApprovalResponse.Reason = "Game has already started";
-            return;
-        }
-
-        if (NetworkManager.Singleton.ConnectedClientsList.Count >= MaxPlayersNumber)
-        {
-            connectionApprovalResponse.Approved = false;
-            connectionApprovalResponse.Reason = "Game is full";
-            return;
-        }
-
-        connectionApprovalResponse.Approved = true;
-    }
     public async void QuickJoin()
     {
         try
         {
             await LobbyService.Instance.QuickJoinLobbyAsync();
 
-            StartClient();
+            MonopolyMultiplayer.Instance.StartClient();
             Debug.Log("Quick Joined");
         } catch (LobbyServiceException ex)
         {
@@ -176,7 +120,7 @@ public class MonopolyLobby : NetworkBehaviour
         {
             joinedLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode);
 
-            StartClient();
+            MonopolyMultiplayer.Instance.StartClient();
         } catch (LobbyServiceException ex)
         {
             Debug.Log(ex);
@@ -437,17 +381,7 @@ public class MonopolyLobby : NetworkBehaviour
         SceneManager.PlayScene(Scenes.Menu);
     }
 
-    public bool IsPlayerIndexConnected(int playerIndex)
-    {
-        return playerIndex < playerDataNetworkList.Count;
-    }
-
-    public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
-    {
-        return playerDataNetworkList[playerIndex];
-    }
-
-    public override void OnDestroy()
+    /*public override void OnDestroy()
     {
         if (playerDataNetworkList != null)
         {
@@ -455,6 +389,5 @@ public class MonopolyLobby : NetworkBehaviour
             playerDataNetworkList.Dispose();
             playerDataNetworkList = null;
         }
-    }
-
+    }*/
 }

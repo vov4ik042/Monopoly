@@ -17,7 +17,7 @@ public class ConectionResponseMessageUi : MonoBehaviour
 
     private void Start()
     {
-        MonopolyLobby.Instance.OnFailedToJoinGame += MonopolyLobby_OnFailedToJoinGame;
+        MonopolyMultiplayer.Instance.OnFailedToJoinGame += MonopolyLobby_OnFailedToJoinGame;
 
         Hide();
     }
@@ -45,6 +45,6 @@ public class ConectionResponseMessageUi : MonoBehaviour
 
     private void OnDestroy()
     {
-        MonopolyLobby.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
+        MonopolyMultiplayer.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
     }
 }//надо проверить

@@ -30,7 +30,7 @@ public class CharacterSelectUI : NetworkBehaviour
         });
         readyButton.onClick.AddListener(() =>
         {
-            SetPlayerReady();//Проверить работает ли кнопка готов 3:41:00
+            SetPlayerReady();
         });
     }
     private void Start()
