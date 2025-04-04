@@ -40,4 +40,8 @@ public class CharacterColorSelectUI : MonoBehaviour
             selectedGameObject.SetActive(false);
         }
     }
+    private void OnDestroy()
+    {
+        MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged -= MonopolyMultiplayer_OnPlayerDataNetworkListChanged;
+    }
 }

@@ -4,12 +4,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CreateLobbyPublicOrPrivate : MonoBehaviour
+public class CreateLobbyUI : MonoBehaviour
 {
-    [SerializeField] private Button buttonExit;
     [SerializeField] private Button buttonPublic;
     [SerializeField] private Button buttonPrivate;
-    [SerializeField] private TextMeshProUGUI lobbyNameInput;
+    [SerializeField] private Button buttonExit;
+    [SerializeField] private TMP_InputField lobbyNameInput;
 
     private void Awake()
     {
@@ -22,10 +22,6 @@ public class CreateLobbyPublicOrPrivate : MonoBehaviour
             MonopolyLobby.Instance.CreateLobby(lobbyNameInput.text, true);
         });
         buttonExit.onClick.AddListener(CloseWindow);
-    }
-    public void ButtonClickStartGame()
-    {
-        SceneManager.PlayScene(Scenes.GameBoard);
     }
 
     private void CloseWindow()

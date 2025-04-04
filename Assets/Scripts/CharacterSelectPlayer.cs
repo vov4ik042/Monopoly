@@ -1,17 +1,33 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CharacterSelectPlayer : MonoBehaviour
 {
     [SerializeField] private int player_index;
     [SerializeField] private GameObject readyGameObject;
     [SerializeField] private PlayerVisual playerVisual;
+    [SerializeField] private Button kickPlayerButton;
+
+    private void Awake()
+    {
+        kickPlayerButton.onClick.AddListener(() =>
+        {
+            Debug.Log("Kick Player");
+            PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(player_index);
+            MonopolyMultiplayer.Instance.KickPlayer(playerData.clientId);
+        });
+    }
 
     private void Start()
     {
         MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged += MonopolyLobby_OnPlayerDataNetworkListChange;
-        CharacterSelectUI.Instance.OnReadyChange += CharacterSelectUI_OnReadyChange;
+        CharacterSelectReady.Instance.OnReadyChange += CharacterSelectUI_OnReadyChange;
+
+        kickPlayerButton.gameObject.SetActive(NetworkManager.Singleton.IsServer);
+
         UpdatePlayer();
     }
 
@@ -33,7 +49,7 @@ public class CharacterSelectPlayer : MonoBehaviour
 
             PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(player_index);
 
-            readyGameObject.SetActive(CharacterSelectUI.Instance.IsPlayerReady(playerData.clientId));
+            readyGameObject.SetActive(CharacterSelectReady.Instance.IsPlayerReady(playerData.clientId));
 
             playerVisual.SetPlayerColor(MonopolyMultiplayer.Instance.GetPlayerColor(playerData.colorId));
         }
@@ -57,7 +73,7 @@ public class CharacterSelectPlayer : MonoBehaviour
         if (MonopolyMultiplayer.Instance != null)
         {
             MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged -= MonopolyLobby_OnPlayerDataNetworkListChange;
-            CharacterSelectUI.Instance.OnReadyChange -= CharacterSelectUI_OnReadyChange;
+            CharacterSelectReady.Instance.OnReadyChange -= CharacterSelectUI_OnReadyChange;
         }
     }
 

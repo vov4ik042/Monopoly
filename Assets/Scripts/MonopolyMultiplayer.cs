@@ -9,7 +9,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
     [SerializeField] private List<Color> PlayerColorList;
     public static MonopolyMultiplayer Instance { get; private set; }
 
-    private int MaxPlayersNumber = 6;
+    private int MaxPlayersNumber = 2;
     private NetworkList<PlayerData> playerDataNetworkList;
 
     public event EventHandler OnTryingToJoinGame;
@@ -29,16 +29,29 @@ public class MonopolyMultiplayer : NetworkBehaviour
     {
         NetworkManager.Singleton.ConnectionApprovalCallback += NetworkManager_ConnectionApprovalCallback;
         NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_OnClientConnectedCallback;
+        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_Server_OnClientDisconnectCallback;
         NetworkManager.Singleton.StartHost();
     }
-
     public void StartClient()
     {
         OnTryingToJoinGame?.Invoke(this, EventArgs.Empty);
 
-        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_OnClientDisconnectCallback;
+        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_Client_OnClientDisconnectCallback;
         NetworkManager.Singleton.StartClient();
     }
+
+    private void NetworkManager_Server_OnClientDisconnectCallback(ulong clientId)//Убираем игрока из лобби когда он вышел
+    {
+        for (int i = 0; i < playerDataNetworkList.Count; i++)
+        {
+            PlayerData playerData = playerDataNetworkList[i];
+            if (playerData.clientId == clientId)
+            {
+                playerDataNetworkList.RemoveAt(i);
+            }
+        }
+    }
+
 
     private void NetworkManager_OnClientConnectedCallback(ulong obj)
     {
@@ -48,7 +61,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
             colorId = GetFirstUnusedColorId(),
         });
     }
-    private void NetworkManager_OnClientDisconnectCallback(ulong clientId)
+    private void NetworkManager_Client_OnClientDisconnectCallback(ulong clientId)
     {
         OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
     }
@@ -166,5 +179,11 @@ public class MonopolyMultiplayer : NetworkBehaviour
             }
         }
         return -1;
+    }
+
+    public void KickPlayer(ulong clientId)
+    {
+        NetworkManager.Singleton.DisconnectClient(clientId);
+        NetworkManager_Server_OnClientDisconnectCallback(clientId);
     }
 }

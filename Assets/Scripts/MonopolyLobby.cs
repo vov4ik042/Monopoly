@@ -13,23 +13,10 @@ using Unity.VisualScripting;
 
 public class MonopolyLobby : NetworkBehaviour
 {
-    [SerializeField] private Button createLobbyButton;
-    [SerializeField] private Button QuickJoinLobbyButton;
-    [SerializeField] private Button CodeJoinLobbyButton;
-    //[SerializeField] private Button ListLobbiesButton;
-    [SerializeField] private Button buttonMainMenu;
-    [SerializeField] private GameObject CreateLobbyPublicPrivate;
-    [SerializeField] private TextMeshProUGUI lobbyCodeInput;
-
     public static MonopolyLobby Instance { get; private set; }
-    private int MaxPlayersNumber = 6;
+    private int MaxPlayersNumber = 2;
     private Lobby joinedLobby;
     private float heartbeatTimer;
-
-    /*private Lobby hostLobby;
-    private float lobbyUpdateTimer;
-    private string playerName;*/
-
 
     private void Awake()
     {
@@ -38,34 +25,12 @@ public class MonopolyLobby : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
 
         InitializeAuthentication();
-
-        createLobbyButton.onClick.AddListener(() =>
-        {
-            CreateLobbyOpenWindow();
-        });
-        QuickJoinLobbyButton.onClick.AddListener(() =>
-        {
-            QuickJoin();
-        });
-        CodeJoinLobbyButton.onClick.AddListener(() =>
-        {
-            JoinWithCode(lobbyCodeInput.text);
-        });
-
-        buttonMainMenu.onClick.AddListener(MainMenuExit);
-    }
-
-    private void Start()
-    {
-        //playerDataNetworkList = new NetworkList<PlayerData>();
-        //playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
     }
 
     private void Update()
     {
         HandleLobbyHeartBeat();
         //HandleLobbyPollForUpdates();
-        Debug.Log(Instance);
     }
 
     private async void InitializeAuthentication()
@@ -87,9 +52,9 @@ public class MonopolyLobby : NetworkBehaviour
         {
             joinedLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, MaxPlayersNumber, new CreateLobbyOptions
             {
-                IsPrivate = isPrivate
+                IsPrivate = isPrivate,
             });
-            Debug.Log("Create lobby! " + joinedLobby.Name + " " + joinedLobby.MaxPlayers + " " + joinedLobby.Id + " " + joinedLobby.LobbyCode);
+            //Debug.Log("Create lobby! " + joinedLobby.Name + " " + joinedLobby.MaxPlayers + " " + joinedLobby.Id + " " + joinedLobby.LobbyCode);
 
             MonopolyMultiplayer.Instance.StartHost();
 
@@ -104,10 +69,9 @@ public class MonopolyLobby : NetworkBehaviour
     {
         try
         {
-            await LobbyService.Instance.QuickJoinLobbyAsync();
+            joinedLobby = await LobbyService.Instance.QuickJoinLobbyAsync();
 
             MonopolyMultiplayer.Instance.StartClient();
-            Debug.Log("Quick Joined");
         } catch (LobbyServiceException ex)
         {
             Debug.Log(ex);
@@ -131,7 +95,7 @@ public class MonopolyLobby : NetworkBehaviour
     {
         return joinedLobby;
     }
-    private async void HandleLobbyHeartBeat()
+    private void HandleLobbyHeartBeat()
     {
         if (IsLobbyHost())
         {
@@ -141,7 +105,7 @@ public class MonopolyLobby : NetworkBehaviour
                 float heartbeatTimerMax = 15;
                 heartbeatTimer = heartbeatTimerMax;
 
-                await LobbyService.Instance.SendHeartbeatPingAsync(joinedLobby.Id);
+                LobbyService.Instance.SendHeartbeatPingAsync(joinedLobby.Id);
             }
         }
     }
@@ -150,244 +114,4 @@ public class MonopolyLobby : NetworkBehaviour
     {
         return joinedLobby != null && joinedLobby.HostId == AuthenticationService.Instance.PlayerId;
     }
-
-    /*    private async void PlayerConnectedToLobby()
-        {
-            await UnityServices.InitializeAsync();
-
-            AuthenticationService.Instance.SignedIn += () =>
-            {
-                Debug.Log("Signed in " + AuthenticationService.Instance.PlayerId);
-            };
-
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            playerName = "vov4ik042" + UnityEngine.Random.Range(10, 90);
-            Debug.Log(playerName);
-        }
-        private async void CreateLobby()
-        {
-            try
-            {
-                string lobbyName = "MyLobby";
-                int maxPlayers = 8;
-                CreateLobbyOptions createLobbyOptions = new CreateLobbyOptions
-                {
-                    IsPrivate = false,
-                    Player = GetPlayer(),
-                    Data = new Dictionary<string, DataObject>
-                    {
-                        { "GameMode", new DataObject(DataObject.VisibilityOptions.Public, "CaptureTheFlag") },
-                    }
-                };
-
-                Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, createLobbyOptions);
-
-                hostLobby = lobby;
-                joinedLobby = hostLobby;
-
-                Debug.Log("Create lobby! " + lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Id + " " + lobby.LobbyCode);
-                PrintPlayers(hostLobby);
-            } catch (LobbyServiceException e){
-                Debug.Log(e);
-            }
-        }
-
-        private async void HandleLobbyPollForUpdates()
-        {
-            if (joinedLobby != null)
-            {
-                lobbyUpdateTimer -= Time.deltaTime;
-                if (lobbyUpdateTimer < 0f)
-                {
-                    float lobbyUpdateTimerMax = 1.1f;
-                    lobbyUpdateTimer = lobbyUpdateTimerMax;
-
-                    Lobby lobby = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
-                    joinedLobby = lobby;
-                }
-            }
-        }
-
-        private async void ListLobbies()
-        {
-            try
-            {
-                QueryLobbiesOptions queryLobbiesOptions = new QueryLobbiesOptions
-                {
-                    Count = 25,
-                    Filters = new List<QueryFilter>
-                    {
-                        new QueryFilter(QueryFilter.FieldOptions.AvailableSlots, "0", QueryFilter.OpOptions.GT)
-                    },
-                    Order = new List<QueryOrder>
-                    {
-                        new QueryOrder(false, QueryOrder.FieldOptions.Created)//from the oldest to the new
-                    }
-                };
-
-                QueryResponse queryResponse = await Lobbies.Instance.QueryLobbiesAsync(queryLobbiesOptions);
-
-                Debug.Log("Lobbies found: " + queryResponse.Results.Count);
-                foreach (Lobby lobby in queryResponse.Results)
-                {
-                    Debug.Log(lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Data["GameMode"].Value);
-                }
-            } catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }
-
-        private async void JoinLobbyByCode(string lobbyCode)
-        {
-            try {
-                JoinLobbyByCodeOptions joinLobbyByCodeOptions = new JoinLobbyByCodeOptions
-                {
-                    Player = GetPlayer()
-                };
-                Lobby lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
-                joinedLobby = lobby;
-                Debug.Log("Joined lobby with code " + lobbyCode);
-
-                PrintPlayers(lobby);
-            } catch (LobbyServiceException e) {
-                Debug.Log(e);
-            }
-        }
-
-        private async void QuickJoinLobby()
-        {
-            try
-            {
-                await LobbyService.Instance.QuickJoinLobbyAsync();
-                Debug.Log("Quick Joined");
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }
-        private Unity.Services.Lobbies.Models.Player GetPlayer()
-        {
-            return new Unity.Services.Lobbies.Models.Player
-            {
-                Data = new Dictionary<string, PlayerDataObject>
-                    {
-                        {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
-                    }
-            };
-        }
-
-        private void PrintPlayers(Lobby lobby)
-        {
-            Debug.Log("PLayers in lobby " + lobby.Name + " " + lobby.Data["GameMode"].Value);
-            foreach (Unity.Services.Lobbies.Models.Player player in lobby.Players)
-            {
-                Debug.Log(player.Id + " " + player.Data["PlayerName"].Value);
-            }
-        }
-
-        private async void UpdateLobbyGameMode(string gameMode)
-        {
-            try
-            {
-                hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
-                {
-                    Data = new Dictionary<string, DataObject>
-                    {
-                        { "GameMode", new DataObject(DataObject.VisibilityOptions.Public, gameMode) }
-                    }
-                });
-                joinedLobby = hostLobby;
-                PrintPlayers(hostLobby);
-            } catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }
-
-        private async void UpdatePLayerName(string newPlayerName)
-        {
-            try
-            {
-                playerName = newPlayerName;
-                await LobbyService.Instance.UpdatePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId, new UpdatePlayerOptions
-                {
-                    Data = new Dictionary<string, PlayerDataObject>
-                    {
-                        {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
-                    }
-                });
-            } catch (LobbyServiceException e){
-                Debug.Log(e);
-            }
-        } 
-
-        private async void LeaveLobby()
-        {
-            try{
-                await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
-            } catch (LobbyServiceException e){
-                Debug.Log(e);
-            }
-        }
-
-        private async void KickPLayer()
-        {
-            try
-            {
-                await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, joinedLobby.Players[1].Id);
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }
-
-        private async void MigrateLobbyHost()
-        {
-            try
-            {
-                hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
-                {
-                    HostId = joinedLobby.Players[1].Id
-                });
-                joinedLobby = hostLobby;
-                PrintPlayers(hostLobby);
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }
-
-        private async void DeleteLobby()
-        {
-            try
-            {
-                await LobbyService.Instance.DeleteLobbyAsync(joinedLobby.Id);
-            } catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-        }*/
-
-    private void CreateLobbyOpenWindow()
-    {
-        CreateLobbyPublicPrivate.gameObject.SetActive(true);
-    }
-    private void MainMenuExit()
-    {
-        SceneManager.PlayScene(Scenes.Menu);
-    }
-
-    /*public override void OnDestroy()
-    {
-        if (playerDataNetworkList != null)
-        {
-            playerDataNetworkList.OnListChanged -= PlayerDataNetworkList_OnListChanged;
-            playerDataNetworkList.Dispose();
-            playerDataNetworkList = null;
-        }
-    }*/
 }
