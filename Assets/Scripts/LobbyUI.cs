@@ -13,6 +13,7 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private Button MainMenuButton;
     [SerializeField] private GameObject CreateLobbyUI;
     [SerializeField] private TMP_InputField lobbyCodeInput;
+    [SerializeField] private TMP_InputField PlayerNameInput;
 
     private void Awake()
     {
@@ -31,7 +32,17 @@ public class LobbyUI : MonoBehaviour
         });
         MainMenuButton.onClick.AddListener(() =>
         {
+            MonopolyLobby.Instance.LeaveLobby();
             SceneManager.PlayScene(Scenes.Menu);
+        });
+    }
+
+    private void Start()
+    {
+        PlayerNameInput.text = MonopolyMultiplayer.Instance.GetPlayerName();
+        PlayerNameInput.onValueChanged.AddListener((string playerName) =>
+        {
+            MonopolyMultiplayer.Instance.SetPlayerName(playerName);
         });
     }
 }

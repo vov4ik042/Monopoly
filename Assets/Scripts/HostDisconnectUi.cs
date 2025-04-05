@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class HostDisconnectUi : MonoBehaviour
+public class HostDisconnectUi : NetworkBehaviour
 {
     [SerializeField] private Button playAgainButton;
 
@@ -26,8 +26,32 @@ public class HostDisconnectUi : MonoBehaviour
     {
         if (clientId == NetworkManager.ServerClientId)
         {
+            ShowForAllPlayersClientRpc();
+        }
+        else
+        {
+            if (!IsServer)
+            {
+                if (clientId == NetworkManager.Singleton.LocalClientId)
+                {
+                    Show();
+                }
+            }
+        }
+        /*if (clientId == NetworkManager.ServerClientId)
+        {
             Show();
         }
+        else
+        {
+            Debug.Log("f");
+        }*/
+    }
+
+    [ClientRpc(RequireOwnership = false)]
+    private void ShowForAllPlayersClientRpc()
+    {
+        Show();
     }
 
     private void Show()
@@ -39,7 +63,7 @@ public class HostDisconnectUi : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_OnClientDisconnectCallback;
     }

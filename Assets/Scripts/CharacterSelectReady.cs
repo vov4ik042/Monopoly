@@ -39,6 +39,7 @@ public class CharacterSelectReady : NetworkBehaviour
 
         if (allClientsReady)
         {
+            MonopolyLobby.Instance.DeleteLobby();
             SceneManager.PlaySceneNetwork(Scenes.GameBoard);
         }
     }
