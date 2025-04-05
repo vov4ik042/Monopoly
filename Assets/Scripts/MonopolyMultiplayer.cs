@@ -11,7 +11,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
     [SerializeField] private List<UnityEngine.Color> PlayerColorList;
     public static MonopolyMultiplayer Instance { get; private set; }
 
-    private int MaxPlayersNumber = 2;
+    private int MaxPlayersNumber = 6;
     private string playerName;
     private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PLayerNameMultiplayer";
     private NetworkList<PlayerData> playerDataNetworkList;
@@ -99,7 +99,6 @@ public class MonopolyMultiplayer : NetworkBehaviour
             }
         }
     }
-
 
     private void NetworkManager_ServerConnectedCallback(ulong obj)
     {

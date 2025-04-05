@@ -83,5 +83,10 @@ public class LobbyMessageUi : MonoBehaviour
     private void OnDestroy()
     {
         MonopolyMultiplayer.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
+        MonopolyLobby.Instance.OnCreateLobbyStarted -= MonopolyLobby_OnCreateLobbyStarted;
+        MonopolyLobby.Instance.OnCreateLobbyFailed -= MonopolyLobby_OnCreateLobbyFailed;
+        MonopolyLobby.Instance.OnJoinStarted -= MonopolyLobby_OnJoinStarted;
+        MonopolyLobby.Instance.OnJoinFailed -= MonopolyLobby_OnJoinFailed;
+        MonopolyLobby.Instance.OnQuickJoinFailed -= MonopolyLobby_OnQuickJoinFailed;
     }
-}//надо проверить
+}

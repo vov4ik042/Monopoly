@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
+using Unity.Services.Lobbies.Models;
 
 public class LobbyUI : MonoBehaviour
 {
@@ -14,6 +15,8 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private GameObject CreateLobbyUI;
     [SerializeField] private TMP_InputField lobbyCodeInput;
     [SerializeField] private TMP_InputField PlayerNameInput;
+    [SerializeField] private Transform LobbyContainer;
+    [SerializeField] private Transform LobbyTemplate;
 
     private void Awake()
     {
@@ -35,6 +38,8 @@ public class LobbyUI : MonoBehaviour
             MonopolyLobby.Instance.LeaveLobby();
             SceneManager.PlayScene(Scenes.Menu);
         });
+
+        LobbyTemplate.gameObject.SetActive(false);
     }
 
     private void Start()
@@ -44,5 +49,35 @@ public class LobbyUI : MonoBehaviour
         {
             MonopolyMultiplayer.Instance.SetPlayerName(playerName);
         });
+
+        MonopolyLobby.Instance.OnLobbyListChanged += MonopolyLobby_OnLobbyListChanged;
+
+        UpdateLobbyList(new List<Lobby>());
+    }
+
+    private void MonopolyLobby_OnLobbyListChanged(object sender, MonopolyLobby.OnLobbyChangedEventArgs e)
+    {
+        UpdateLobbyList(e.lobbyList);
+    }
+
+    private void UpdateLobbyList(List<Lobby> lobbyList)
+    {
+        foreach(Transform child in LobbyContainer)
+        {
+            if (child == LobbyTemplate) continue;
+            Destroy(child.gameObject);
+        }
+
+        foreach(Lobby lobby in lobbyList)
+        {
+            Transform lobbyTransform = Instantiate(LobbyTemplate, LobbyContainer);
+            lobbyTransform.gameObject.SetActive(true);
+            lobbyTransform.GetComponent<LobbyListSingleUI>().SetLobby(lobby);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        MonopolyLobby.Instance.OnLobbyListChanged -= MonopolyLobby_OnLobbyListChanged;
     }
 }

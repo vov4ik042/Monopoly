@@ -20,10 +20,16 @@ public class MonopolyLobby : NetworkBehaviour
     public event EventHandler OnJoinStarted;
     public event EventHandler OnQuickJoinFailed;
     public event EventHandler OnJoinFailed;
+    public event EventHandler <OnLobbyChangedEventArgs> OnLobbyListChanged;
+    public class OnLobbyChangedEventArgs : EventArgs
+    {
+        public List<Lobby> lobbyList;
+    }
 
-    private int MaxPlayersNumber = 2;
     private Lobby joinedLobby;
+    private int MaxPlayersNumber = 6;
     private float heartbeatTimer;
+    private float listLobbiesTimer;
 
     private void Awake()
     {
@@ -37,7 +43,23 @@ public class MonopolyLobby : NetworkBehaviour
     private void Update()
     {
         HandleLobbyHeartBeat();
-        //HandleLobbyPollForUpdates();
+        HandlePeriodicListLobbies();
+    }
+
+    private void HandlePeriodicListLobbies()
+    {
+        if (joinedLobby == null &&
+            AuthenticationService.Instance.IsSignedIn &&
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == Scenes.Lobby.ToString())
+        {
+            listLobbiesTimer -= Time.deltaTime;
+            if (listLobbiesTimer <= 0f)
+            {
+                float listLobbiesTimerMax = 3f;
+                listLobbiesTimer = listLobbiesTimerMax;
+                ListLobbies();
+            }
+        }
     }
 
     private async void InitializeAuthentication()
@@ -53,6 +75,29 @@ public class MonopolyLobby : NetworkBehaviour
         }
     }
 
+    private async void ListLobbies()
+    {
+        try
+        {
+            QueryLobbiesOptions queryLobbiesOptions = new QueryLobbiesOptions
+            {
+                Filters = new List<QueryFilter>
+                {
+                    new QueryFilter(QueryFilter.FieldOptions.AvailableSlots, "0", QueryFilter.OpOptions.GT)
+                }
+            };
+            QueryResponse queryResponse = await LobbyService.Instance.QueryLobbiesAsync(queryLobbiesOptions);
+
+            OnLobbyListChanged?.Invoke(this, new OnLobbyChangedEventArgs
+            {
+                lobbyList = queryResponse.Results
+            });
+        } catch (LobbyServiceException ex)
+        {
+            Debug.Log(ex);
+        }
+    }
+
     public async void CreateLobby(string lobbyName, bool isPrivate)
     {
         OnCreateLobbyStarted?.Invoke(this, EventArgs.Empty);
@@ -62,7 +107,6 @@ public class MonopolyLobby : NetworkBehaviour
             {
                 IsPrivate = isPrivate,
             });
-            //Debug.Log("Create lobby! " + joinedLobby.Name + " " + joinedLobby.MaxPlayers + " " + joinedLobby.Id + " " + joinedLobby.LobbyCode);
 
             MonopolyMultiplayer.Instance.StartHost();
             SceneManager.PlaySceneNetwork(Scenes.CharacterSelect);
@@ -85,6 +129,21 @@ public class MonopolyLobby : NetworkBehaviour
         {
             Debug.Log(ex);
             OnQuickJoinFailed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+    public async void JoinWithId(string lobbyId)
+    {
+        OnJoinStarted?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId);
+
+            MonopolyMultiplayer.Instance.StartClient();
+        }
+        catch (LobbyServiceException ex)
+        {
+            Debug.Log(ex);
+            OnJoinFailed?.Invoke(this, EventArgs.Empty);
         }
     }
 

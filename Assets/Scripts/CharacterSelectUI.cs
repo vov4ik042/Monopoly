@@ -18,6 +18,7 @@ public class CharacterSelectUI : MonoBehaviour
     {
         mainMenuButton.onClick.AddListener(() =>
         {
+            MonopolyLobby.Instance.LeaveLobby();
             NetworkManager.Singleton.Shutdown();
             SceneManager.PlayScene(Scenes.Menu);
         });
