@@ -27,7 +27,6 @@ public class GameController : NetworkBehaviour
     public static GameController Instance;
 
     private int[] choicePlayers = new int[] { 0, 6 };//
-    private int CountNetworkClients { get; set; }
 
     private int choicePlayersIndex = 0;//
     private int countPlayersAir = 1;//
@@ -52,6 +51,9 @@ public class GameController : NetworkBehaviour
     // private int steps;//Кол-во клеток перемещения
     private Player cachedCurrentPlayer; // Кэш для клиента
 
+    public event EventHandler AllClientsConnected;
+    private int PlayersConnectedCount;
+
     private void OnEnable()
     {
         btnStartTurn.onClick.AddListener(RollTheDicesServerRpc);
@@ -75,6 +77,40 @@ public class GameController : NetworkBehaviour
         PlacementPlayersOnTable();
     }
 
+    private void Start()
+    {
+        NetworkManager.SceneManager.OnLoadEventCompleted += NetworkManager_OnLoadEventCompleted;
+        Instance.AllClientsConnected += GameController_AllClientsConnected;
+    }
+
+    private void GameController_AllClientsConnected(object sender, EventArgs e)
+    {
+        CreatePLayersServerRpc();
+    }
+
+    private void NetworkManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        if (IsClient)
+        {
+            IncreaseCountPlayersConnectedServerRpc();
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void IncreaseCountPlayersConnectedServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        PlayersConnectedCount++;
+        if (PlayersConnectedCount == NetworkManager.Singleton.ConnectedClients.Count)
+        {
+            IncreaseCountPlayersConnectedClientRpc();
+        }
+    }
+    [ClientRpc]
+    private void IncreaseCountPlayersConnectedClientRpc()
+    {
+        AllClientsConnected?.Invoke(this, EventArgs.Empty);
+    }
+
     public override void OnNetworkSpawn()
     {
         //currentPlayerIndex.Value = 0;
@@ -84,7 +120,7 @@ public class GameController : NetworkBehaviour
         if (IsHost)
         {
             //NetworkManager.Singleton.SceneManager.OnLoadEventComplete += SceneManager_OnLoadEventComplete; 3:43;28
-            NetworkManager.Singleton.OnClientConnectedCallback += VerifyAllClientsConnectedServerRpc;
+            //NetworkManager.Singleton.OnClientConnectedCallback += VerifyAllClientsConnectedServerRpc;
             players.CollectionChanged += OnPlayersChanged;
         }
 
@@ -401,14 +437,14 @@ public class GameController : NetworkBehaviour
         return 5;
     }
 
-    [ServerRpc]
+    /*[ServerRpc]
     private void VerifyAllClientsConnectedServerRpc(ulong clientid)
     {
         if (choicePlayers.Length == NetworkManager.Singleton.ConnectedClientsList.Count)
         {
             CreatePLayersServerRpc();
         }
-    }
+    }*/
     [ServerRpc]
     private void CreatePLayersServerRpc()
     {
@@ -525,6 +561,18 @@ public class GameController : NetworkBehaviour
                 {
                     result.z -= offsetZ;
                     result.x -= offsetX;
+                    break;
+                }
+            case 5:
+                {
+                    result.z -= 2 * offsetZ;
+                    result.x += 2 * offsetX;
+                    break;
+                }
+            case 6:
+                {
+                    result.z -= 2 * offsetZ;
+                    result.x -= 2 * offsetX;
                     break;
                 }
         }

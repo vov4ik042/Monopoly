@@ -38,14 +38,6 @@ public class HostDisconnectUi : NetworkBehaviour
                 }
             }
         }
-        /*if (clientId == NetworkManager.ServerClientId)
-        {
-            Show();
-        }
-        else
-        {
-            Debug.Log("f");
-        }*/
     }
 
     [ClientRpc(RequireOwnership = false)]

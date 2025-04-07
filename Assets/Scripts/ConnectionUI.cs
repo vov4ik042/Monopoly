@@ -35,4 +35,4 @@ public class ConnectionUI : MonoBehaviour
         MonopolyMultiplayer.Instance.OnTryingToJoinGame -= MonopolyLobby_OnTryingToJoinGame;
         MonopolyMultiplayer.Instance.OnFailedToJoinGame -= MonopolyLobby_OnFailedToJoinGame;
     }
-}//надо проверить
+}

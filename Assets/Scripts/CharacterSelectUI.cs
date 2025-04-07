@@ -27,7 +27,7 @@ public class CharacterSelectUI : MonoBehaviour
             CharacterSelectReady.Instance.SetPlayerReady();
         });
     }
-    private void Start()//4:57
+    private void Start()
     {
         Lobby lobby = MonopolyLobby.Instance.GetLobby();
 

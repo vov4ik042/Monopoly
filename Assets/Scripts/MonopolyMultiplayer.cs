@@ -120,9 +120,8 @@ public class MonopolyMultiplayer : NetworkBehaviour
     }
 
     private void NetworkManager_ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest connectionApprovalRequest,
-    NetworkManager.ConnectionApprovalResponse connectionApprovalResponse)//3:45:35//Destroy object 1:57:00
+    NetworkManager.ConnectionApprovalResponse connectionApprovalResponse)
     {
-        //3:26:38
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != Scenes.CharacterSelect.ToString())
         {
             connectionApprovalResponse.Approved = false;
