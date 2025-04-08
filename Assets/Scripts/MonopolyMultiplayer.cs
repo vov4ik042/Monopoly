@@ -13,13 +13,12 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
     private int MaxPlayersNumber = 6;
     private string playerName;
-    private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PLayerNameMultiplayer";
+    private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PlayerNameMultiplayer";
     private NetworkList<PlayerData> playerDataNetworkList;
 
     public event EventHandler OnTryingToJoinGame;
     public event EventHandler OnFailedToJoinGame;
     public event EventHandler OnPlayerDataNetworkListChanged;
-
 
     private void Awake()
     {
@@ -31,7 +30,6 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
 
     }
-
     public string GetPlayerName()
     {
         return playerName;
@@ -42,7 +40,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
         PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, playerName);
     }
-
+    
     public void StartHost()
     {
         NetworkManager.Singleton.ConnectionApprovalCallback += NetworkManager_ConnectionApprovalCallback;
@@ -147,6 +145,20 @@ public class MonopolyMultiplayer : NetworkBehaviour
     {
         return playerDataNetworkList[playerIndex];
     }
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerMoneyServerRpc(int playerIndex, int money)
+    {
+        PlayerData playerData = playerDataNetworkList[playerIndex];
+
+        playerData.playerMoney = money;
+
+        playerDataNetworkList[playerIndex] = playerData;
+    }
+
+    public int GetPlayerMoney(int playerIndex)
+    {
+        return playerDataNetworkList[playerIndex].playerMoney;
+    }
 
     public PlayerData GetPlayerDataFromClientId(ulong clientId)
     {
@@ -180,6 +192,11 @@ public class MonopolyMultiplayer : NetworkBehaviour
     public UnityEngine.Color GetPlayerColor(int colorId)
     {
         return PlayerColorList[colorId];
+    }
+    public UnityEngine.Color GetPlayerColorFromPlayerId(int playerIndex)
+    {
+        PlayerData playerData = playerDataNetworkList[playerIndex];
+        return PlayerColorList[playerData.colorId];
     }
 
     public void ChangePlayerColor(int colorId)

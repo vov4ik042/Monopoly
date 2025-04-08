@@ -11,6 +11,9 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
     public int colorId;
     public FixedString64Bytes playerName;
     public FixedString64Bytes playerId;
+    public int playerMoney;
+    public int PhaseRentInfrastructure;
+    public bool Bankrupt;
 
     public bool Equals(PlayerData other)
     {
@@ -18,6 +21,9 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
             clientId == other.clientId &&
             colorId == other.colorId &&
             playerId == other.playerId &&
+            PhaseRentInfrastructure == other.PhaseRentInfrastructure &&
+            playerMoney == other.playerMoney &&
+            Bankrupt == other.Bankrupt &&
             playerName == other.playerName;
     }
 
@@ -27,5 +33,8 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
         serializer.SerializeValue(ref colorId);
         serializer.SerializeValue(ref playerName);
         serializer.SerializeValue(ref playerId);
+        serializer.SerializeValue(ref playerMoney);
+        serializer.SerializeValue(ref PhaseRentInfrastructure);
+        serializer.SerializeValue(ref Bankrupt);
     }
 }

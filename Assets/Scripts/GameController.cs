@@ -11,48 +11,27 @@ using UniRx;
 using System.Linq;
 public class GameController : NetworkBehaviour
 {
-    [SerializeField] private GameObject[] playerPrefabs = new GameObject[8]; //Условный список всех игроков (обьектов)
+    [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Dictionary<int, GameObject> indexObjectPlayer;
-    [SerializeField] private List<GameObject> playersInfoTable = new List<GameObject>(); // Список всех игроков в таблице
-    [SerializeField] private GameObject playersTablePref;
     [SerializeField] private Transform objectCanvas;
 
     [SerializeField] private Button btnStartTurn;
     [SerializeField] private Button btnEndTurn;
     [SerializeField] private Button btnWaitingUp;
     [SerializeField] private Button btnWaitingDown;
-    //[SerializeField] private int stepppMyValue;
+
+    public static GameController Instance;
+    private int startMoneyPlayer = 1500;//465
 
     private ObservableCollection<Player> players = new ObservableCollection<Player>(); // Список всех игроков
-    public static GameController Instance;
-
-    private int[] choicePlayers = new int[] { 0, 6 };//
-
-    private int choicePlayersIndex = 0;//
-    private int countPlayersAir = 1;//
-    private int countPlayersGround = 1;//
-
-    private List<Color> colorPlayers = new List<Color>();
-
-    private float heightForAirPlayers = 2.0f;
-    private float heightForGroundPlayers = 0.15f;
-
-    private Vector3 startPositionPlayer = new Vector3(16, 0, -16);
-    private Quaternion startRotationPlayer = Quaternion.Euler(0, -90, 0);
-
-    private int startMoneyPlayer = 1500;//465
-    private float boardSize;
-    //private byte currentPlayerindex.Value; //Индекс текущего игрока
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
-    //public bool CanPlayerMove { get; set; }
-
     private ReactiveProperty<int> steps = new ReactiveProperty<int>();//Кол-во клеток перемещения
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
-    // private int steps;//Кол-во клеток перемещения
+
     private Player cachedCurrentPlayer; // Кэш для клиента
 
     public event EventHandler AllClientsConnected;
-    private int PlayersConnectedCount;
+    private int PlayersConnectedCountServer;
 
     private void OnEnable()
     {
@@ -73,25 +52,54 @@ public class GameController : NetworkBehaviour
     private void Awake()
     {
         Instance = this;
-        ColorsGaveForPlayers();//
-        PlacementPlayersOnTable();
     }
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
         NetworkManager.SceneManager.OnLoadEventCompleted += NetworkManager_OnLoadEventCompleted;
         Instance.AllClientsConnected += GameController_AllClientsConnected;
+
+        steps.Skip(1).Subscribe(MovePLayer).AddTo(_compositeDisposable);
+
+        /*if (IsClient && IsSpawned) // Проверяем, что объект заспавнен
+        {
+            currentPlayerIndex.OnValueChanged += OnTurnChanged;
+        }*/
     }
 
     private void GameController_AllClientsConnected(object sender, EventArgs e)
     {
-        CreatePLayersServerRpc();
+        Debug.Log("GameController_AllClientsConnected called");
+        if (IsServer)
+        {
+            Debug.Log("GameController_AllClientsConnected server called");
+            CreatePlayersServerRpc();
+            DiceController.Instance.CreateCubesUI();
+        }
+        if (IsClient)
+        {
+            Debug.Log("GameController_AllClientsConnected client called");
+            CreateTablePlayerInfoServerRpc();
+            BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
+        }
     }
-
+    [ServerRpc(RequireOwnership = false)]
+    private void CreateTablePlayerInfoServerRpc()
+    {
+        Debug.Log("CreateTablePlayerInfoServerRpc called");
+        CreateTablePlayerInfoClientRpc(PlayersConnectedCountServer);
+    }
+    [ClientRpc]
+    private void CreateTablePlayerInfoClientRpc(int count)
+    {
+        Debug.Log("CreateTablePlayerInfoClientRpc called");
+        TablePlayersUI.Instance.PutPlayersOnTableUI(count);
+    }
     private void NetworkManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         if (IsClient)
         {
+            Debug.Log("NetworkManager_OnLoadEventCompleted called");
             IncreaseCountPlayersConnectedServerRpc();
         }
     }
@@ -99,8 +107,9 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void IncreaseCountPlayersConnectedServerRpc(ServerRpcParams serverRpcParams = default)
     {
-        PlayersConnectedCount++;
-        if (PlayersConnectedCount == NetworkManager.Singleton.ConnectedClients.Count)
+        Debug.Log("IncreaseCountPlayersConnectedServerRpc called");
+        PlayersConnectedCountServer++;
+        if (PlayersConnectedCountServer == NetworkManager.Singleton.ConnectedClients.Count)
         {
             IncreaseCountPlayersConnectedClientRpc();
         }
@@ -108,34 +117,8 @@ public class GameController : NetworkBehaviour
     [ClientRpc]
     private void IncreaseCountPlayersConnectedClientRpc()
     {
+        Debug.Log("IncreaseCountPlayersConnectedClientRpc called");
         AllClientsConnected?.Invoke(this, EventArgs.Empty);
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        //currentPlayerIndex.Value = 0;
-        steps.Skip(1).Subscribe(MovePLayer).AddTo(_compositeDisposable);
-        boardSize = BoardController.Instance.BoardCardCount();
-        BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
-        if (IsHost)
-        {
-            //NetworkManager.Singleton.SceneManager.OnLoadEventComplete += SceneManager_OnLoadEventComplete; 3:43;28
-            //NetworkManager.Singleton.OnClientConnectedCallback += VerifyAllClientsConnectedServerRpc;
-            players.CollectionChanged += OnPlayersChanged;
-        }
-
-        if (IsClient && IsSpawned) // Проверяем, что объект заспавнен
-        {
-            currentPlayerIndex.OnValueChanged += OnTurnChanged;
-        }
-    }
-
-    public override void OnDestroy()
-    {
-        if (IsClient && IsSpawned)
-        {
-            currentPlayerIndex.OnValueChanged -= OnTurnChanged;
-        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -210,15 +193,6 @@ public class GameController : NetworkBehaviour
         }
     }
 
-    private void ColorsGaveForPlayers()
-    {
-        colorPlayers.Add(Color.red);
-        colorPlayers.Add(Color.green);
-        colorPlayers.Add(Color.blue);
-        colorPlayers.Add(Color.black);
-        colorPlayers.Add(Color.yellow);
-        colorPlayers.Add(Color.white);
-    }
     private void btnTurnController(int phase)
     {
         switch (phase)
@@ -323,7 +297,6 @@ public class GameController : NetworkBehaviour
             Debug.Log("Not my turn");
         }
     }
-
     private void EndTurn()
     {
         if (IsMyTurn())
@@ -421,7 +394,7 @@ public class GameController : NetworkBehaviour
 
     public void UpdatePlayerColorCardOnBoard()
     {
-        BoardController.Instance.UpdateColorCardOnBoard(colorPlayers[currentPlayerIndex.Value]);
+        //BoardController.Instance.UpdateColorCardOnBoard(colorPlayers[currentPlayerIndex.Value]);
     }
 
     private void PlayerMakeAuction()
@@ -437,23 +410,34 @@ public class GameController : NetworkBehaviour
         return 5;
     }
 
-    /*[ServerRpc]
-    private void VerifyAllClientsConnectedServerRpc(ulong clientid)
+    [ServerRpc(RequireOwnership = false)]
+    private void CreatePlayersServerRpc()
     {
-        if (choicePlayers.Length == NetworkManager.Singleton.ConnectedClientsList.Count)
+        Vector3 startPlayerPosition = new Vector3(14.7f, 0.16f, -15.0f);
+        Quaternion startPlayerRotation = Quaternion.Euler(0, 0, 0);
+
+        for (int i = 0; i < NetworkManager.Singleton.ConnectedClients.Count; i++)
         {
-            CreatePLayersServerRpc();
-        }
-    }*/
-    [ServerRpc]
-    private void CreatePLayersServerRpc()
-    {
-        for (int i = 0; i < choicePlayers.Length; i++)
-        {
-            CreatePlayersAndAddToListServerRpc(choicePlayers[i]);
+            Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(i);
+            Vector3 offset = GetOffsetForPlayersSpawn(i);
+
+            MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(i, startMoneyPlayer);
+
+            Player newPlayer = new Player();
+            newPlayer.moneyPlayer = startMoneyPlayer;
+            newPlayer.SetDefaultcurrentPosition();
+
+            GameObject playerObject = Instantiate(playerPrefab, new Vector3(startPlayerPosition.x + offset.x, startPlayerPosition.y,
+                startPlayerPosition.z + offset.z), startPlayerRotation);
+
+            playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
+            playerObject.GetComponent<Player>().SetThisPlayer(newPlayer);
+            playerObject.GetComponent<Player>().SetPlayerColor(color, i);
+
+            players.Add(newPlayer);
         }
     }
-    [ServerRpc]
+    /*[ServerRpc]
     private void CreatePlayersAndAddToListServerRpc(int index)
     {
         Vector3 offset;
@@ -478,7 +462,8 @@ public class GameController : NetworkBehaviour
 
             countPlayersAir++;
         }
-        else /*(playerPrefabs[number[choicePlayersIndex]].CompareTag("Ground"))*/
+        else 
+    //(playerPrefabs[number[choicePlayersIndex]].CompareTag("Ground"))
         {
             offset = PlacementStartPlayersOnBoard(countPlayersGround);
             playerObject = Instantiate(playerPrefabs[choicePlayers[choicePlayersIndex]], new Vector3(startPositionPlayer.x + offset.x, heightForGroundPlayers,
@@ -497,15 +482,8 @@ public class GameController : NetworkBehaviour
         //Debug.Log($"Player {newPlayer.propertyPlayerID} created Host+Client");
         //SyncPlayersListClientRpc(newPlayer.propertyPlayerID, newPlayer.moneyPlayer);
         players.Add(newPlayer);
-    }
+    }*/
 
-    private void OnPlayersChanged(object sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (players.Count == choicePlayers.Length && IsHost)//
-        { 
-            StartGame();
-        }
-    }
     private void StartGame()
     {
         if (IsOwner == players[currentPlayerIndex.Value])
@@ -513,7 +491,6 @@ public class GameController : NetworkBehaviour
             if (IsHost)
             {
                 Debug.Log("Все игроки подключены. Начинаем игру!");
-                DiceController.Instance.SpawnCubes();
                 GiveFirstPlayerButtonClientRpc();
             }
         }
@@ -531,23 +508,25 @@ public class GameController : NetworkBehaviour
         }
     }
 
-    private Vector3 PlacementStartPlayersOnBoard(int phase)
+    private Vector3 GetOffsetForPlayersSpawn(int phase)
     {
         float offsetX = 1.3f;
-        float offsetZ = 1.3f;
+        float offsetZ = 2.0f;
         Vector3 result = new Vector3(0, 0, 0);
 
         switch (phase)
         {
+            case 0:
+                {
+                    return result;
+                }
             case 1:
                 {
-                    result.z += offsetZ;
-                    result.x -= offsetX;
+                    result.z -= offsetZ;
                     break;
                 }
             case 2:
                 {
-                    result.z += offsetZ;
                     result.x += offsetX;
                     break;
                 }
@@ -559,8 +538,7 @@ public class GameController : NetworkBehaviour
                 }
             case 4:
                 {
-                    result.z -= offsetZ;
-                    result.x -= offsetX;
+                    result.z -= 2 * offsetZ;
                     break;
                 }
             case 5:
@@ -569,58 +547,21 @@ public class GameController : NetworkBehaviour
                     result.x += 2 * offsetX;
                     break;
                 }
-            case 6:
-                {
-                    result.z -= 2 * offsetZ;
-                    result.x -= 2 * offsetX;
-                    break;
-                }
         }
         return result;
     }
 
-    private void PlacementPlayersOnTable()
-    {
-        Vector3 startPoint = new Vector3(-40, -135, -20);//425
-        float offsetY = 60.0f;
-        int j = 0;
-        for (int i = 0; i < players.Count; i++)
-        {
-            if (j == 2)
-            {
-                offsetY += 125.0f;// Дистанция для обьектов, по два
-                j = 1;
-            }
-            else j++;
-
-            Vector2 position = new Vector2(startPoint.x + ((i % 2 == 0) ? offsetY : -offsetY), startPoint.y);
-            GameObject obj = Instantiate(playersTablePref, objectCanvas);
-            playersInfoTable.Add(obj);
-
-            RectTransform rectTransform = obj.GetComponent<RectTransform>();
-            rectTransform.anchoredPosition = position;
-
-            TextMeshProUGUI[] textComponent = obj.GetComponentsInChildren<TextMeshProUGUI>();
-            if (textComponent.Length > 0)
-            {
-                textComponent[0].text = players[i].propertyPlayerID + "";
-                textComponent[1].text = players[i].moneyPlayer + "$";
-            }
-        }
-    }
-
     public void UpdatePlayersMoneyInfoOnTable()//Візуально сверху
     {
-        for (int i = 0; i < playersInfoTable.Count; i++)
+        /*for (int i = 0; i < playersInfoTable.Count; i++)
         {
             TextMeshProUGUI[] textComponent = playersInfoTable[i].GetComponentsInChildren<TextMeshProUGUI>();
             if (textComponent.Length > 0)
             {
                 textComponent[1].text = players[i].moneyPlayer + "$";
             }
-        }
+        }*/
     }
-
 
     [ServerRpc(RequireOwnership = false)]
     private void NextPlayerTurnServerRpc()
@@ -639,5 +580,18 @@ public class GameController : NetworkBehaviour
         //Debug.Log("currentPlayerIndex: " + (ulong)currentPlayerIndex.Value + " LocalClientId: " + NetworkManager.Singleton.LocalClientId);
         //return currentPlayerIndex.Value == (int)OwnerClientId;
         return (ulong)currentPlayerIndex.Value == NetworkManager.Singleton.LocalClientId;
+    }
+    public override void OnDestroy()
+    {
+        if (IsClient && IsSpawned)
+        {
+            currentPlayerIndex.OnValueChanged -= OnTurnChanged;
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        NetworkManager.SceneManager.OnLoadEventCompleted -= NetworkManager_OnLoadEventCompleted;
+        Instance.AllClientsConnected -= GameController_AllClientsConnected;
     }
 }

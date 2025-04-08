@@ -73,7 +73,7 @@ public class DiceController : NetworkBehaviour
         Instance = this;
     }
 
-    public void SpawnCubes()
+    public void CreateCubesUI()
     {
         Vector3 position1 = new Vector3(-9.10f, 19.69f, -15.71f);
         Vector3 position2 = new Vector3(-7.90f, 19.69f, -15.71f);

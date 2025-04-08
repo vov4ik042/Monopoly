@@ -7,14 +7,19 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UniRx;
 using Unity.Netcode;
-using System.Globalization;
 
 public class Player : NetworkBehaviour
 {
+    [SerializeField] private MeshRenderer MeshRenderer1;
+    [SerializeField] private MeshRenderer MeshRenderer2;
+
+    private Material material;
 
     private ReactiveProperty<int> _moneyPlayer = new ReactiveProperty<int>();
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
     private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
+
+    private Player thisPlayer;
 
     public int moneyPlayer
     {
@@ -33,19 +38,19 @@ public class Player : NetworkBehaviour
         }
     }
 
-    public GameObject playerPrefab;
     public static int playerCounter = 0;
     private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
     private int PhaseRentInfrastructure { get; set; } = 0;
     public bool Bankrupt { get; set; } = false;
-    public Vector3 playerOffSet { get; set; }
-    public string playerName { get; set; }
+    //public Vector3 playerOffSet { get; set; }
 
     private void Awake()
     {
+        material = new Material(MeshRenderer1.material);
+        MeshRenderer1.material = material;
+        MeshRenderer2.material = material;
         startPositionPlayer = transform.position;
     }
-
     public override void OnNetworkSpawn()
     {
         //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
@@ -67,34 +72,32 @@ public class Player : NetworkBehaviour
     {
         currentPosition.Value = 0;
     }
-    private void Update()
+
+    public void SetPlayerColor(Color color, int playerId)
     {
-        if (!IsOwner) return; // Управлять может только свой объект
-
-        float moveX = Input.GetAxis("Horizontal");
-        float moveZ = Input.GetAxis("Vertical");
-
-
-        Vector3 move = new Vector3(moveX, 0, moveZ) * 2.0f * Time.deltaTime;
-        transform.position += move;
+        material.color = color;
+        SetPlayerColorClientRpc(playerId);
+    }
+    [ClientRpc]
+    public void SetPlayerColorClientRpc(int playerId)
+    {
+        Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerId);
+        material.color = color;
     }
 
+    public void SetThisPlayer(Player player)
+    {
+        thisPlayer = player;
+    }
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
-        //Debug.Log("isOwner: " + IsOwner);
-        /*if (!IsOwner) 
-        {
-            Debug.Log("clientCurrent: " + NetworkManager.LocalClient.ClientId + " + clientOwner: " + clientIdPlayer);
-            yield break;
-        }*/
-
         float moveDuration = .7f;
 
         for (int i = 0; i < steps; i++)
         {
             //Debug.Log("pos: " + currentPosition.Value);
-            Vector3 startPosition = playerPrefab.transform.position;
+            Vector3 startPosition = gameObject.transform.position;
             float elapsedTime = 0f;
 
             int nextPosition = currentPosition.Value + 1;
@@ -128,36 +131,28 @@ public class Player : NetworkBehaviour
                 goTo.z = startPositionPlayer.z;
             }
 
-            goTo.y = playerOffSet.y;
+            //goTo.y = playerOffSet.y;
 
             while (elapsedTime < moveDuration)
             {
                 //Debug.Log("pos: " + playerPrefab.transform.position);
-                playerPrefab.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
+                gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            playerPrefab.transform.position = goTo;
+            gameObject.transform.position = goTo;
             currentPosition.Value = nextPosition;
             BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
-
-            //UpdatePlayerPositionClientRpc(goTo, currentPosition.Value);
         }
         //isMoving = false;
         Debug.Log("currentPosition " + currentPosition.Value);
     }
-    /*[ClientRpc]
-    private void UpdateCurrentPlayerPositionClientRpc(int value)
-    {
-        currentPosition.Value = value;
-        Vector3 goTo = BoardController.Instance.GetBoardPosition(value);
-        playerPrefab.transform.position = goTo;
-    }*/
+
     [ClientRpc]
     private void UpdatePlayerPositionClientRpc(Vector3 newPosition, int newCurrentPosition)
     {
-        this.playerPrefab.transform.position = newPosition;
+        gameObject.transform.position = newPosition;
         currentPosition.Value = newCurrentPosition;
         BoardController.Instance.CurrentPlayerPosition(newCurrentPosition);
     }
@@ -265,21 +260,4 @@ public class Player : NetworkBehaviour
         }
         return false;
     }
-
-    /*[ServerRpc]
-    private void UpdatePositionServerRpc(Vector3 newPosition, int newPositionIndex)
-    {
-        currentPosition = newPositionIndex;
-
-        UpdatePositionClientRpc(newPosition, newPositionIndex);
-    }
-
-    [ClientRpc]
-    private void UpdatePositionClientRpc(Vector3 newPosition, int newPositionIndex)
-    {
-        if (IsOwner) return; // Локальный игрок уже в нужной позиции
-
-        currentPosition = newPositionIndex;
-        transform.position = newPosition;
-    }*/
 }
