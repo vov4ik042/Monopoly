@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
@@ -29,6 +30,13 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerDataNetworkList = new NetworkList<PlayerData>();
         playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
 
+    }
+    public void ViewListClientsId()
+    {
+        for (int i = 0; i < playerDataNetworkList.Count; i++)
+        {
+            Debug.Log("ClientIdList: " + playerDataNetworkList[i].clientId + " " + playerDataNetworkList[i].playerName);
+        }
     }
     public string GetPlayerName()
     {
@@ -144,6 +152,10 @@ public class MonopolyMultiplayer : NetworkBehaviour
     public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
     {
         return playerDataNetworkList[playerIndex];
+    }
+    public ulong GetClientIdFromPlayerIndex(int playerIndex)
+    {
+        return playerDataNetworkList[playerIndex].clientId;
     }
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerMoneyServerRpc(int playerIndex, int money)

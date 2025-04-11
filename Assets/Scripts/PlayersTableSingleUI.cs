@@ -11,7 +11,7 @@ public class PlayersTableSingleUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI PlayerNameText;
     [SerializeField] private TextMeshProUGUI PlayerMoneyText;
 
-    public void SetPlayerInfo(int playerIndex)
+    public void UpdatePlayerInfo(int playerIndex)
     {
         PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(playerIndex);
         PlayerColorImage.color = MonopolyMultiplayer.Instance.GetPlayerColor(playerData.colorId);

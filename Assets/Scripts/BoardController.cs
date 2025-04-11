@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 using UniRx;
 using Unity.Netcode;
 
-public class BoardController : NetworkBehaviour
+public class BoardController : MonoBehaviour
 {
     [SerializeField] private GameObject[] cardPrefCountries;
     [SerializeField] private GameObject[] cardPrefInfrastructures;
@@ -57,14 +57,11 @@ public class BoardController : NetworkBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            if (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.LocalClientId)
-            {
-                ShowOrHideCardInfo();
-            }
+            ShowOrHideCardInfo();
         }
     }
 
-    public override void OnDestroy()
+    public void OnDestroy()
     {
         _compositeDisposable.Dispose();
     }
@@ -298,7 +295,6 @@ public class BoardController : NetworkBehaviour
                 DeleteCardPanelInfo();
             }
         }
-
     }
     private bool IsPointerOverUI()//понять как работает
     {
@@ -336,6 +332,7 @@ public class BoardController : NetworkBehaviour
 
     private void CreateCardInfoUI(int index)
     {
+        Debug.Log("Card create");
         currentCardInfoIndex = index;//Для дальнейшего использования конкретной карты
 
         Card card = boardCardPositions[index].GetComponent<Card>();
@@ -639,6 +636,7 @@ public class BoardController : NetworkBehaviour
 
     public void PutPriceAndNameOnCardsUI()
     {
+        Debug.Log("Put price");
         for (int i = 0; i < boardCardPositions.Count; i++)
         {
             TextMeshProUGUI[] cardTextField = boardCardPositions[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>();
@@ -649,8 +647,8 @@ public class BoardController : NetworkBehaviour
                     continue;
                 if (i != 2 && i != 22)
                 {
-                    cardTextField[0].text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";//Infrastructure
-                    cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetCityName();//Infrastructure
+                    cardTextField[0].text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";
+                    cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetCityName();
                 }
                 if (i == 2)
                 {

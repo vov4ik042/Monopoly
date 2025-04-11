@@ -20,7 +20,7 @@ public class Player : NetworkBehaviour
     private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
 
     private Player thisPlayer;
-
+    public GameObject playerPref;
     public int moneyPlayer
     {
         get { return _moneyPlayer.Value; }
@@ -97,7 +97,7 @@ public class Player : NetworkBehaviour
         for (int i = 0; i < steps; i++)
         {
             //Debug.Log("pos: " + currentPosition.Value);
-            Vector3 startPosition = gameObject.transform.position;
+            Vector3 startPosition = playerPref.transform.position;
             float elapsedTime = 0f;
 
             int nextPosition = currentPosition.Value + 1;
@@ -136,12 +136,12 @@ public class Player : NetworkBehaviour
             while (elapsedTime < moveDuration)
             {
                 //Debug.Log("pos: " + playerPrefab.transform.position);
-                gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
+                playerPref.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            gameObject.transform.position = goTo;
+            playerPref.transform.position = goTo;
             currentPosition.Value = nextPosition;
             BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
         }
@@ -149,13 +149,13 @@ public class Player : NetworkBehaviour
         Debug.Log("currentPosition " + currentPosition.Value);
     }
 
-    [ClientRpc]
+    /*[ClientRpc]
     private void UpdatePlayerPositionClientRpc(Vector3 newPosition, int newCurrentPosition)
     {
-        gameObject.transform.position = newPosition;
+        playerPref.transform.position = newPosition;
         currentPosition.Value = newCurrentPosition;
         BoardController.Instance.CurrentPlayerPosition(newCurrentPosition);
-    }
+    }*/
     private void CheckIfPlayerIsCurrentPlayer(int moneyPlayerNew)
     {
         if (this == GameController.Instance.GetCurrentPlayer())

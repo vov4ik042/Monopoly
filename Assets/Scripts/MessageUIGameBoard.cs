@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class MessageUIGameBoard : MonoBehaviour
 {
-    private void Start()
+    private void Awake()
     {
         GameController.Instance.AllClientsConnected += GameController_CountOfConnectedClientsChanged;
     }

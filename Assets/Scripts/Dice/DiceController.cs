@@ -102,21 +102,21 @@ public class DiceController : NetworkBehaviour
         cube1.GetComponent<DiceRoll>().SetResult(0);
         cube2.GetComponent<DiceRoll>().SetResult(0);
     }
-    public IEnumerator DropDiceCoroutine(ulong localClientId)
+    public IEnumerator DropDiceCoroutine()
     {
         MakeResultCubesDefault();
 
         yield return new WaitForSeconds(0.1f);
 
-        DiceThrow(new NetworkObjectReference(cube1), localClientId);
-        DiceThrow(new NetworkObjectReference(cube2), localClientId);
+        DiceThrow(new NetworkObjectReference(cube1));
+        DiceThrow(new NetworkObjectReference(cube2));
 
         yield return new WaitUntil(() => cube1.GetComponent<DiceRoll>().GetResult() != 0 && cube2.GetComponent<DiceRoll>().GetResult() != 0);
 
         WriteResultCubes();
     }
 
-    public void DiceThrow(NetworkObjectReference diceRef, ulong clientId)
+    public void DiceThrow(NetworkObjectReference diceRef)
     {
         if (diceRef.TryGet(out NetworkObject diceNetworkObject))
         {
