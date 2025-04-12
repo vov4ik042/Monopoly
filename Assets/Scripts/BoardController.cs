@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 using UniRx;
 using Unity.Netcode;
 
-public class BoardController : MonoBehaviour
+public class BoardController : NetworkBehaviour
 {
     [SerializeField] private GameObject[] cardPrefCountries;
     [SerializeField] private GameObject[] cardPrefInfrastructures;
@@ -25,7 +25,7 @@ public class BoardController : MonoBehaviour
     static public BoardController Instance;
     private GameObject currentCardOpenInfo { get; set; }//Для удаления обьектов cardINfo
     private GameObject currentCardPanelOpenInfo { get; set; }//Для удаления панели для  cardINfo
-    private int currentPlayerPosition { get; set; }//Для понимая с какой картой работать
+    private int currentPlayerPosition;//Для понимая с какой картой работать
     private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
 
     private UnityEngine.UI.Button[] ButtonsPanelCardInfo;//Кнопки панели
@@ -59,11 +59,6 @@ public class BoardController : MonoBehaviour
         {
             ShowOrHideCardInfo();
         }
-    }
-
-    public void OnDestroy()
-    {
-        _compositeDisposable.Dispose();
     }
 
     private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
@@ -106,7 +101,7 @@ public class BoardController : MonoBehaviour
 
         if (allSameOwner)
         {
-            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.propertyPlayerID}!");//
+            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.playerID}!");//
             MakeCardsCountryPossibleToUpgrade(listCitiesCountry, true);
         }
         else
@@ -404,7 +399,7 @@ public class BoardController : MonoBehaviour
         Player player = boardCardPositions[index].GetComponent<Card>().GetPLayerOwner();
 
         TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
-        textComponent[0].text = "Owner " + player.propertyPlayerID;//Заменить на имя, в будущем
+        textComponent[0].text = "Owner " + player.playerID;//Заменить на имя, в будущем
     }
 
     private Vector2 TypeOfOperationForCreatingPanelForCardInfo(int typeOperation, int index)
@@ -621,12 +616,13 @@ public class BoardController : MonoBehaviour
     public int WhatCardNumber() => currentPlayerPosition;
     public int SumCardCost() => boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(currentPlayerPosition);//Infrastructure
     public int SumCardCostForOpenInfo() => boardCardPositions[currentCardInfoIndex].GetComponent<Card>().GetPriceCard(currentCardInfoIndex);//Infrastructure
-    public void UpdateColorCardOnBoard(Color color)
+
+    public void UpdateColorCardOnBoard(int playerIndex)
     {
-        Transform obj = boardCardPositions[currentPlayerPosition].transform.Find("Color");
-        MeshRenderer meshRenderer = obj.GetComponent<MeshRenderer>();
-        meshRenderer.material.color = color;
+        Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
+        boardCardPositions[currentPlayerPosition].GetComponent<Card>().SetOwnerColorField(color);
     }
+
     public void HideColorCardOnBoard()
     {
         Transform obj = boardCardPositions[currentCardInfoIndex].transform.Find("Color");
@@ -636,7 +632,6 @@ public class BoardController : MonoBehaviour
 
     public void PutPriceAndNameOnCardsUI()
     {
-        Debug.Log("Put price");
         for (int i = 0; i < boardCardPositions.Count; i++)
         {
             TextMeshProUGUI[] cardTextField = boardCardPositions[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>();
@@ -676,7 +671,7 @@ public class BoardController : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"Страна {countryName} не найдена!");
+                Debug.LogError($"Країна {countryName} не знайдена!");
             }
         }
         else
@@ -710,7 +705,7 @@ public class BoardController : MonoBehaviour
 
         player.UpgradeOrDemoteCity(priceToUpgrade);
         card.PlayerUpgradeCity();
-        GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+        //TablePlayersUI.Instance.UpdateInfo();
 
         Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
 
@@ -730,7 +725,7 @@ public class BoardController : MonoBehaviour
 
         player.UpgradeOrDemoteCity(-priceToDemote);
         card.PlayerDemoteCity(currentCardInfoIndex);
-        GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+        //TablePlayersUI.Instance.UpdateInfo();
 
         Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
 
@@ -748,7 +743,7 @@ public class BoardController : MonoBehaviour
             player.SellCard(cardPrice, currentCardInfoIndex);
 
             SellCityOrInfrastructureReact(currentCardInfoIndex, player);
-            GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+            //TablePlayersUI.Instance.UpdateInfo();
             HideColorCardOnBoard();
             DeleteCardPanelInfo();
         }
@@ -792,4 +787,9 @@ public class BoardController : MonoBehaviour
         RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
         rectTransform.anchoredPosition = new Vector2(0,-4);
     }*/
+
+    public override void OnDestroy()
+    {
+        _compositeDisposable.Dispose();
+    }
 }

@@ -15,28 +15,14 @@ public class Player : NetworkBehaviour
 
     private Material material;
 
-    private ReactiveProperty<int> _moneyPlayer = new ReactiveProperty<int>();
+    private NetworkVariable<int> _moneyPlayer = new NetworkVariable<int>(0);
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
     private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
 
     private Player thisPlayer;
     public GameObject playerPref;
-    public int moneyPlayer
-    {
-        get { return _moneyPlayer.Value; }
-        set { _moneyPlayer.Value = value; }
-    }
 
-    private int playerID;
-    public int propertyPlayerID
-    {
-        get { return playerID; }
-        set 
-        {
-            playerCounter++;
-            playerID = playerCounter;
-        }
-    }
+    public int playerID { get; set; }
 
     public static int playerCounter = 0;
     private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
@@ -56,6 +42,16 @@ public class Player : NetworkBehaviour
         //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
         //MakeDefaultcurrentPositionServerRpc();
         //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
+    }
+
+    public void SetPlayerMoney(int value)
+    {
+        _moneyPlayer.Value += value;
+        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, _moneyPlayer.Value);
+    }
+    public int GetPlayerMoney()
+    { 
+        return _moneyPlayer.Value;
     }
     public void SetDefaultcurrentPosition()
     {
@@ -96,7 +92,6 @@ public class Player : NetworkBehaviour
 
         for (int i = 0; i < steps; i++)
         {
-            //Debug.Log("pos: " + currentPosition.Value);
             Vector3 startPosition = playerPref.transform.position;
             float elapsedTime = 0f;
 
@@ -145,17 +140,9 @@ public class Player : NetworkBehaviour
             currentPosition.Value = nextPosition;
             BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
         }
-        //isMoving = false;
         Debug.Log("currentPosition " + currentPosition.Value);
     }
 
-    /*[ClientRpc]
-    private void UpdatePlayerPositionClientRpc(Vector3 newPosition, int newCurrentPosition)
-    {
-        playerPref.transform.position = newPosition;
-        currentPosition.Value = newCurrentPosition;
-        BoardController.Instance.CurrentPlayerPosition(newCurrentPosition);
-    }*/
     private void CheckIfPlayerIsCurrentPlayer(int moneyPlayerNew)
     {
         if (this == GameController.Instance.GetCurrentPlayer())
@@ -172,10 +159,10 @@ public class Player : NetworkBehaviour
             }
         }
     }
-    public void BuyCard(int num, int sum)
+    public void BuyCard(int cardIndex, int cardCost)
     {
-        Card card = BoardController.Instance.ReturnCardObject(num);
-        moneyPlayer -= sum;
+        Card card = BoardController.Instance.ReturnCardObject(cardIndex);
+        SetPlayerMoney(-cardCost);
         card.SetPlayerOwner(this);
         card.ShowHideCardPriceText(false);
     }
@@ -183,7 +170,7 @@ public class Player : NetworkBehaviour
     public void SellCard(int cardPrice, int index)
     {
         Card card = BoardController.Instance.ReturnCardObject(index);
-        moneyPlayer += cardPrice / 2;//При продаже возвращается только 50% от стоимости клетки
+        SetPlayerMoney(cardPrice / 2);//При продаже возвращается только 50% от стоимости клетки
         card.SetPlayerOwner(null);
         card.ShowHideCardPriceText(true);
         Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPLayerOwner());
@@ -207,15 +194,15 @@ public class Player : NetworkBehaviour
         }
 
         Debug.Log("Плата за ренту: " + sumToPay);
-        moneyPlayer -= sumToPay;
-        OwnerCardPlayer.moneyPlayer += sumToPay;
-        GameController.Instance.UpdatePlayersMoneyInfoOnTable();
+        SetPlayerMoney(-sumToPay);
+        OwnerCardPlayer.SetPlayerMoney(+sumToPay);
+        //TablePlayersUI.Instance.UpdateInfo();
         StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
     }
 
     private IEnumerator VerifyPlayerMoney()
     {
-        while (moneyPlayer < 0 && Bankrupt == false)
+        while (GetPlayerMoney() < 0 && Bankrupt == false)
         {
             yield return null;
         }
@@ -230,7 +217,7 @@ public class Player : NetworkBehaviour
     public void PlayerGotTreasure()
     {
         int treasure = UnityEngine.Random.Range(25, 325);
-        moneyPlayer += treasure;
+        SetPlayerMoney(treasure);
         Debug.Log("player " + playerID + " got " + treasure);
     }
     public void PlayerPayTax(int number)
@@ -238,23 +225,23 @@ public class Player : NetworkBehaviour
         int result;
         if (number == 2)//15% tax
         {
-            result = moneyPlayer * 15 / 100;
+            result = GetPlayerMoney() * 15 / 100;
         }
         else//5% tax
         {
-            result = moneyPlayer * 5 / 100;
+            result = GetPlayerMoney() * 5 / 100;
         }
-            moneyPlayer -= result;
+        SetPlayerMoney(-result);
         Debug.Log("player " + playerID + " paid " + result + " for tax");
     }
 
     public void UpgradeOrDemoteCity(int sumToPay)
     {
-        moneyPlayer -= sumToPay;
+        SetPlayerMoney(-sumToPay);
     }
     public bool PlayerHasEnoughMoneyToUpgrade(int sumToPay)
     {
-        if (moneyPlayer - sumToPay >= 0)
+        if (GetPlayerMoney() - sumToPay >= 0)
         {
             return true;
         }

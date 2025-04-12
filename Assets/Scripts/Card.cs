@@ -2,15 +2,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Numerics;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Card : MonoBehaviour
+public class Card : NetworkBehaviour
 {
     [SerializeField] private int cardIndex;
     [SerializeField] private TextMeshProUGUI cardTextPrice;
+    [SerializeField] private MeshRenderer colorOwnerField;
     private bool CardCanUpgrade { get; set; } = false;
     private int PhaseRentCountry { get; set; } = 0;
 
@@ -20,6 +23,33 @@ public class Card : MonoBehaviour
     private string InfrastructureName;
     private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
     private Player PLayerOwner { get; set; }
+    public UnityEngine.Color IntToColor(int value)
+    {
+        byte a = (byte)((value >> 24) & 0xFF);
+        byte r = (byte)((value >> 16) & 0xFF);
+        byte g = (byte)((value >> 8) & 0xFF);
+        byte b = (byte)(value & 0xFF);
+        return new Color32(r, g, b, a);
+    }
+    public int ColorToInt(UnityEngine.Color color)
+    {
+        Color32 c32 = color;
+        int value = (c32.a << 24) | (c32.r << 16) | (c32.g << 8) | c32.b;
+        return value;
+    }
+
+    public void SetOwnerColorField(UnityEngine.Color color)
+    {
+        colorOwnerField.material.color = color;
+        int colorInt = ColorToInt(color);
+        SetOwnerColorFieldClientRpc(colorInt);
+    }
+    [ClientRpc]
+    public void SetOwnerColorFieldClientRpc(int intColor)
+    {
+        UnityEngine.Color color = IntToColor(intColor);
+        colorOwnerField.material.color = color;
+    }
 
     public int GetCardIndex() => cardIndex;
     public Player GetPLayerOwner() => PLayerOwner;
@@ -75,6 +105,12 @@ public class Card : MonoBehaviour
         PLayerOwner = player;
     }
     public void ShowHideCardPriceText(bool res)
+    {
+        cardTextPrice.gameObject.SetActive(res);
+        ShowHideCardPriceTextClientRpc(res);
+    }
+    [ClientRpc]
+    public void ShowHideCardPriceTextClientRpc(bool res)
     {
         cardTextPrice.gameObject.SetActive(res);
     }

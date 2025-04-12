@@ -25,7 +25,7 @@ public class TablePlayersUI : MonoBehaviour
         UpdateInfo();
     }
 
-    private void UpdateInfo()
+    public void UpdateInfo()
     {
         for (int i = 0; i < TemplatesList.Count; i++)
         {

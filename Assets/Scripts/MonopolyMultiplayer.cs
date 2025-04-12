@@ -165,6 +165,8 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerData.playerMoney = money;
 
         playerDataNetworkList[playerIndex] = playerData;
+
+        TablePlayersUI.Instance.UpdateInfo();
     }
 
     public int GetPlayerMoney(int playerIndex)
