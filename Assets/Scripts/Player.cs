@@ -14,29 +14,25 @@ public class Player : NetworkBehaviour
     [SerializeField] private MeshRenderer MeshRenderer2;
 
     private Material material;
+    public GameObject playerPref;
 
     private NetworkVariable<int> _moneyPlayer = new NetworkVariable<int>(0);
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
-    private NetworkVariable<int> currentPosition = new NetworkVariable<int>();
-
-    private Player thisPlayer;
-    public GameObject playerPref;
+    private NetworkVariable<int> currentPosition = new NetworkVariable<int>(0);
 
     public int playerID { get; set; }
 
     public static int playerCounter = 0;
-    private Vector3 startPositionPlayer = new Vector3(0, 0, 0);
     private int PhaseRentInfrastructure { get; set; } = 0;
     public bool Bankrupt { get; set; } = false;
-    //public Vector3 playerOffSet { get; set; }
 
     private void Awake()
     {
         material = new Material(MeshRenderer1.material);
         MeshRenderer1.material = material;
         MeshRenderer2.material = material;
-        startPositionPlayer = transform.position;
     }
+
     public override void OnNetworkSpawn()
     {
         //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
@@ -53,21 +49,6 @@ public class Player : NetworkBehaviour
     { 
         return _moneyPlayer.Value;
     }
-    public void SetDefaultcurrentPosition()
-    {
-        currentPosition.Value = 0;
-    }
-    [ServerRpc(RequireOwnership = false)]
-    public void MakeDefaultcurrentPositionServerRpc()
-    {
-        currentPosition.Value = 0;
-        UpdateMakeDefaultcurrentPositionClientRpc();
-    }
-    [ClientRpc]
-    private void UpdateMakeDefaultcurrentPositionClientRpc()
-    {
-        currentPosition.Value = 0;
-    }
 
     public void SetPlayerColor(Color color, int playerId)
     {
@@ -81,14 +62,11 @@ public class Player : NetworkBehaviour
         material.color = color;
     }
 
-    public void SetThisPlayer(Player player)
-    {
-        thisPlayer = player;
-    }
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
-        float moveDuration = .7f;
+        float playerHeight = 0.16f;
+        float moveDuration = .6f;
 
         for (int i = 0; i < steps; i++)
         {
@@ -96,41 +74,26 @@ public class Player : NetworkBehaviour
             float elapsedTime = 0f;
 
             int nextPosition = currentPosition.Value + 1;
+
             if (nextPosition == 40)
             {
                 nextPosition = 0;
             }
 
             Vector3 goTo = BoardController.Instance.GetBoardPosition(nextPosition);
-
-            if (nextPosition == 0 || nextPosition == 20) //Для сохранения своей линии относительно клетки
+            
+            if (nextPosition == 2 || nextPosition == 5 || nextPosition == 22 || nextPosition == 25)//Для красивого позиционирования игрока на специальных картах
             {
-                goTo.z = -startPositionPlayer.z;
+                goTo.z = startPosition.z;
             }
-            if (nextPosition == 10 || nextPosition == 30) //Для сохранения своей линии относительно клетки
+            if (nextPosition == 15 || nextPosition == 17 || nextPosition == 35 || nextPosition == 38)//Для красивого позиционирования игрока на специальных картах
             {
-                goTo.x = -startPositionPlayer.x;
+                goTo.x = startPosition.x;
             }
-
-            if (currentPosition.Value == 0 || currentPosition.Value == 10 || currentPosition.Value == 20 || currentPosition.Value == 30) //Обновление позиции рассчета имеено после предыдущих вычеслений
-            {
-                startPositionPlayer = startPosition;
-            }
-
-            if ((nextPosition > 10 && nextPosition <= 20) || (nextPosition > 30 && nextPosition < 40) || nextPosition == 0) //Фиксирование X оси на двух сторонах доски
-            {
-                goTo.x = startPositionPlayer.x;
-            }
-            if ((nextPosition > 0 && nextPosition <= 10) || (nextPosition > 20 && nextPosition <= 30)) //Фиксирование Z оси на двух сторонах доски
-            {
-                goTo.z = startPositionPlayer.z;
-            }
-
-            //goTo.y = playerOffSet.y;
+            goTo.y = playerHeight;
 
             while (elapsedTime < moveDuration)
             {
-                //Debug.Log("pos: " + playerPrefab.transform.position);
                 playerPref.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
@@ -140,7 +103,7 @@ public class Player : NetworkBehaviour
             currentPosition.Value = nextPosition;
             BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
         }
-        Debug.Log("currentPosition " + currentPosition.Value);
+        //Debug.Log("currentPosition " + currentPosition.Value);
     }
 
     private void CheckIfPlayerIsCurrentPlayer(int moneyPlayerNew)
@@ -159,11 +122,12 @@ public class Player : NetworkBehaviour
             }
         }
     }
-    public void BuyCard(int cardIndex, int cardCost)
+
+    public void BuyCard(int cardIndex, int cardCost, Player player)
     {
         Card card = BoardController.Instance.ReturnCardObject(cardIndex);
         SetPlayerMoney(-cardCost);
-        card.SetPlayerOwner(this);
+        card.SetPlayerOwner(player);
         card.ShowHideCardPriceText(false);
     }
 
@@ -173,7 +137,7 @@ public class Player : NetworkBehaviour
         SetPlayerMoney(cardPrice / 2);//При продаже возвращается только 50% от стоимости клетки
         card.SetPlayerOwner(null);
         card.ShowHideCardPriceText(true);
-        Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPLayerOwner());
+        Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPlayerOwner());
     }
 
     public void AuctionCard()
@@ -182,7 +146,7 @@ public class Player : NetworkBehaviour
     }
     public void PayRent(int index, Card card)
     {
-        Player OwnerCardPlayer = card.GetPLayerOwner();
+        Player OwnerCardPlayer = card.GetPlayerOwner();
         int sumToPay;
         if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Country card
         {

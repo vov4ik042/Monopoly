@@ -22,7 +22,7 @@ public class Card : NetworkBehaviour
 
     private string InfrastructureName;
     private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
-    private Player PLayerOwner { get; set; }
+    private Player PlayerOwner { get; set; }
     public UnityEngine.Color IntToColor(int value)
     {
         byte a = (byte)((value >> 24) & 0xFF);
@@ -52,7 +52,7 @@ public class Card : NetworkBehaviour
     }
 
     public int GetCardIndex() => cardIndex;
-    public Player GetPLayerOwner() => PLayerOwner;
+    public Player GetPlayerOwner() => PlayerOwner;
     public string GetCountryName() => CountryName;
     public int GetPriceCard(int index)
     {
@@ -102,7 +102,7 @@ public class Card : NetworkBehaviour
 
     public void SetPlayerOwner(Player player)
     {
-        PLayerOwner = player;
+        PlayerOwner = player;
     }
     public void ShowHideCardPriceText(bool res)
     {

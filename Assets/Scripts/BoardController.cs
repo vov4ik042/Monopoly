@@ -27,7 +27,6 @@ public class BoardController : NetworkBehaviour
     private GameObject currentCardPanelOpenInfo { get; set; }//Для удаления панели для  cardINfo
     private int currentPlayerPosition;//Для понимая с какой картой работать
     private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
-
     private UnityEngine.UI.Button[] ButtonsPanelCardInfo;//Кнопки панели
 
     private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();//Словарь всех стран и кол-во купленых городов
@@ -95,9 +94,9 @@ public class BoardController : NetworkBehaviour
             return;
         }
 
-        Player owner = listCitiesCountry[0].GetPLayerOwner();
+        Player owner = listCitiesCountry[0].GetPlayerOwner();
 
-        bool allSameOwner = listCitiesCountry.All(city => city.GetPLayerOwner() == owner);
+        bool allSameOwner = listCitiesCountry.All(city => city.GetPlayerOwner() == owner);
 
         if (allSameOwner)
         {
@@ -164,38 +163,6 @@ public class BoardController : NetworkBehaviour
         boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug    Store", 200, 25, 50, 100, 200, 400);
         boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas   Station", 200, 25, 50, 100, 200, 400);
         boardCardPositions[36].GetComponent<Card>().InitializeCardInfrastructure("Airport", 200, 25, 50, 100, 200, 400);
-
-        /*propertiesCardInfo = new Dictionary<int, Card>//Card Info
-        {
-            { 1, new Card("Trnava", 2, 10, 30, 90, 160, 250, 60, 50, 50) },
-            { 3, new Card("Bratislava", 2, 10, 30, 90, 160, 250, 60, 50, 50) },
-            { 4, new Card("Kosice", 4, 20, 60, 180, 320, 450, 90, 50, 50) },
-            { 6, new Card("Krakow", 6, 30, 90, 270, 400, 550, 100, 50, 50) },
-            { 7, new Card("Warsawa", 6, 30, 90, 270, 400, 550, 100, 50, 50) },
-            { 8, new Card("Factory", 200, 25, 50, 100, 200, 400) },
-            { 9, new Card("Gdansk", 8, 40, 100, 300, 450, 600, 120, 50, 50) },
-            { 11, new Card("Ankara", 10, 50, 150, 450, 625, 750, 140, 100, 100) },
-            { 12, new Card("Stambul", 10, 50, 150, 450, 625, 750, 140, 100, 100) },
-            { 13, new Card("Stadium", 200, 25, 50, 100, 200, 400) },
-            { 14, new Card("Antalya", 12, 60, 180, 500, 700, 900, 160, 100, 100) },
-            { 16, new Card("Dresden", 14, 70, 200, 550, 750, 950, 180, 100, 100) },
-            { 18, new Card("Berlin", 14, 70, 200, 550, 750, 950, 180, 100, 100) },
-            { 19, new Card("Frankfurt", 16, 80, 220, 600, 800, 1000, 200, 100, 100) },
-            { 21, new Card("Odesa", 18, 90, 250, 700, 875, 1050, 220, 150, 150) },
-            { 23, new Card("Kyiv", 18, 90, 250, 700, 875, 1050, 220, 150, 150) },
-            { 24, new Card("Kharkiv", 20, 100, 300, 750, 925, 1100, 240, 150, 150) },
-            { 26, new Card("California", 22, 110, 330, 800, 975, 1150, 260, 150, 150) },
-            { 27, new Card("Washington", 22, 110, 330, 800, 975, 1150, 260, 150, 150) },
-            { 28, new Card("Drug Store", 200, 25, 50, 100, 200, 400) },
-            { 29, new Card("New York", 24, 120, 360, 850, 1025, 1200, 280, 150, 150) },
-            { 31, new Card("Perth", 26, 130, 390, 900, 1100, 1275, 300, 200, 200) },
-            { 32, new Card("Melbourne", 26, 130, 390, 900, 1100, 1275, 300, 200, 200) },
-            { 33, new Card("Gas Station", 200, 25, 50, 100, 200, 400) },
-            { 34, new Card("Sydney", 28, 150, 450, 1000, 1200, 1400, 320, 200, 200) },
-            { 36, new Card("Airport", 200, 25, 50, 100, 200, 400) },
-            { 37, new Card("Houten", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200) },
-            { 39, new Card("Amsterdam", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200) },
-        };*/
     }
     private void ShowOrHideCardInfo()
     {
@@ -222,11 +189,12 @@ public class BoardController : NetworkBehaviour
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
+            int layerMask = LayerMask.GetMask("CardsCountryLayer");
 
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask))
             {
-                Debug.Log("hit " + hit);
                 Card cardCountry = hit.collider.gameObject.GetComponent<Card>();
+
                 if (cardCountry != null)
                 {
                     if (currentCardOpenInfo != null)
@@ -317,7 +285,7 @@ public class BoardController : NetworkBehaviour
     {
         var card = boardCardPositions[index].GetComponent<Card>();
 
-        if (card.GetPLayerOwner() != null)
+        if (card.GetPlayerOwner() != null)
         {
             return true;
         }
@@ -327,7 +295,6 @@ public class BoardController : NetworkBehaviour
 
     private void CreateCardInfoUI(int index)
     {
-        Debug.Log("Card create");
         currentCardInfoIndex = index;//Для дальнейшего использования конкретной карты
 
         Card card = boardCardPositions[index].GetComponent<Card>();
@@ -360,10 +327,10 @@ public class BoardController : NetworkBehaviour
         Transform gameObject1 = currentCardOpenInfo.transform.Find("UiPriceRent");
         Card card = boardCardPositions[index].GetComponent<Card>();
 
-        if (card.GetPLayerOwner() != null)
+        if (card.GetPlayerOwner() != null)
         {
             Vector2 position;
-            Player player = card.GetPLayerOwner();
+            Player player = card.GetPlayerOwner();
 
             int StartPositionY = operation == 1 ? 118 : 92;
             int phase = operation == 1 ? card.GetPhaseRentCountry() : player.GetPhaseRentInfrastructure() - 1;
@@ -396,7 +363,7 @@ public class BoardController : NetworkBehaviour
         RectTransform rectTransform = currentCardPanelOpenInfo.GetComponent<RectTransform>();
         rectTransform.anchoredPosition = position;
 
-        Player player = boardCardPositions[index].GetComponent<Card>().GetPLayerOwner();
+        Player player = boardCardPositions[index].GetComponent<Card>().GetPlayerOwner();
 
         TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
         textComponent[0].text = "Owner " + player.playerID;//Заменить на имя, в будущем
@@ -497,7 +464,7 @@ public class BoardController : NetworkBehaviour
     private bool CurrentPLayerIsOwnThisCard(int index)
     {
         Player player1 = GameController.Instance.GetCurrentPlayer();
-        Player player2 = boardCardPositions[index].GetComponent<Card>().GetPLayerOwner();
+        Player player2 = boardCardPositions[index].GetComponent<Card>().GetPlayerOwner();
 
         if (player1 == player2)
         {
@@ -515,29 +482,31 @@ public class BoardController : NetworkBehaviour
     public int CheckCardBoughtOrNot(Player player)
     {
         Card cardCountry = boardCardPositions[currentPlayerPosition].GetComponent<Card>();
-        if (cardCountry.GetPLayerOwner() == null)
+
+        if (cardCountry.GetPlayerOwner() == null)
         {
             Debug.Log("Купить или выставить на аукцион");
-            return 2; // 2 кнопки купить или выставить на аукцион
+            return 2;
         }
         else
         {
-            if (cardCountry.GetPLayerOwner() == player)
+            if (cardCountry.GetPlayerOwner() == player)
             {
                 Debug.Log("Своя клетка");
             }
             else
             {
+                Debug.Log("Плачу ренту");
                 int index = cardCountry.GetCardIndex();
                 player.PayRent(index, cardCountry);
             }
-            return 3;//Кнопку закончить ход
+            return 3;
         }
     }
     public void CurrentOwnerCard(int num)
     {
         Card card = boardCardPositions[num].GetComponent<Card>();
-        Debug.Log("owner card " + num + " " + card.GetPLayerOwner());
+        Debug.Log("owner card " + num + " " + card.GetPlayerOwner());
     }
 
     private void DeleteCardInfo()

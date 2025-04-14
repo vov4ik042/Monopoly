@@ -22,12 +22,11 @@ public class GameController : NetworkBehaviour
 
     public static GameController Instance;
     private int startMoneyPlayer = 1500;//465
-    private int steps;//Кол-во клеток перемещения
+    private int steps = 1;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
-    private ObservableCollection<Player> players = new ObservableCollection<Player>(); // Список всех игроков
+    private List<Player> players = new List<Player>(); // Список всех игроков
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
-    private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
 
     private Player cachedCurrentPlayer; // Кэш для клиента
 
@@ -157,7 +156,7 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetStepsValueServerRpc(int value)
     {
-        steps = value;
+        //steps = value;
         int player = players[currentPlayerIndex.Value].playerID;
 
         Debug.Log("Игроку " + player + " выпало " + steps);
@@ -167,7 +166,7 @@ public class GameController : NetworkBehaviour
     [ClientRpc]
     private void UpdateStepsClientRpc(int value, int player)
     {
-        steps = value;
+        //steps = value;
         Debug.Log("Игроку " + player + " выпало " + steps);
     }
 
@@ -221,22 +220,16 @@ public class GameController : NetworkBehaviour
     private IEnumerator RollTheDicesCoroutine()
     {
         yield return StartCoroutine(DiceController.Instance.DropDiceCoroutine());
-        MovePLayerClientRpc();
+        MoveCurrentPlayerServerRpc(steps);
     }
-    [ClientRpc]
+    /*[ClientRpc]
     private void MovePLayerClientRpc()
     {
         if (IsMyTurn())
         {
-            Debug.Log("MovePLayer");
             MoveCurrentPlayerServerRpc(steps);
-            //WhatIsANewPlayerPosition(steps);
         }
-        else
-        {
-            Debug.Log("Not my turn move");
-        }
-    }
+    }*/
 
     [ServerRpc(RequireOwnership = false)]
     public void MoveCurrentPlayerServerRpc(int steps)
@@ -308,7 +301,7 @@ public class GameController : NetworkBehaviour
         int cardIndex = BoardController.Instance.WhatCardNumber();
         int cardCost = BoardController.Instance.SumCardCost();
 
-        players[currentPlayerIndex.Value].BuyCard(cardIndex, cardCost);
+        players[currentPlayerIndex.Value].BuyCard(cardIndex, cardCost, players[currentPlayerIndex.Value]);
 
         BoardController.Instance.BuyCityOrInfrastructureReact(cardIndex, players[currentPlayerIndex.Value]);
         BoardController.Instance.UpdateColorCardOnBoard(currentPlayerIndex.Value);
@@ -341,19 +334,16 @@ public class GameController : NetworkBehaviour
 
             MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(i, startMoneyPlayer);
 
-            Player newPlayer = new Player();
-            newPlayer.SetPlayerMoney(startMoneyPlayer);
-            newPlayer.playerID = i;
-            newPlayer.SetDefaultcurrentPosition();
-
             GameObject playerObject = Instantiate(playerPrefab, new Vector3(startPlayerPosition.x + offset.x, startPlayerPosition.y,
                 startPlayerPosition.z + offset.z), startPlayerRotation);
 
-            newPlayer.playerPref = playerObject;
-
             playerObject.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClient.ClientId);
-            playerObject.GetComponent<Player>().SetThisPlayer(newPlayer);
             playerObject.GetComponent<Player>().SetPlayerColor(color, i);
+
+            Player newPlayer = playerObject.GetComponent<Player>();
+            newPlayer.SetPlayerMoney(startMoneyPlayer);
+            newPlayer.playerID = i;
+            newPlayer.playerPref = playerObject;
 
             players.Add(newPlayer);
         }

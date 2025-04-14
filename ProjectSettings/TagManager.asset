@@ -4,15 +4,14 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Air
-  - Ground
   - cardInfoPref
   - CardBoardTextField
+  - CardsCountry
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - CardsCountryLayer
   - Water
   - UI
   - PlayBoard
