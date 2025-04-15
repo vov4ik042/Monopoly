@@ -14,15 +14,18 @@ public class Card : NetworkBehaviour
     [SerializeField] private int cardIndex;
     [SerializeField] private TextMeshProUGUI cardTextPrice;
     [SerializeField] private MeshRenderer colorOwnerField;
-    private bool CardCanUpgrade { get; set; } = false;
-    private int PhaseRentCountry { get; set; } = 0;
+
+    private NetworkVariable<ulong> clientOwnerId = new NetworkVariable<ulong>(0);
+    private NetworkVariable<int> PhaseRentCountry = new NetworkVariable<int>(0);
+    private NetworkVariable<bool> CardCanUpgrade = new NetworkVariable<bool>(false);
+
+    private Player PlayerOwner { get; set; } = null;
 
     private string CityName, CountryName;
     private int Rent, RentOneHouse, RentTwoHouses, RentThreeHouses, RentFourHouses, RentHotel, Price, PriceHouse, PriceHotel;//For countries card
 
     private string InfrastructureName;
     private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
-    private Player PlayerOwner { get; set; }
     public UnityEngine.Color IntToColor(int value)
     {
         byte a = (byte)((value >> 24) & 0xFF);
@@ -36,6 +39,15 @@ public class Card : NetworkBehaviour
         Color32 c32 = color;
         int value = (c32.a << 24) | (c32.r << 16) | (c32.g << 8) | c32.b;
         return value;
+    }
+
+    public void SetClientOwnerId(ulong clientOwnerId)
+    {
+        this.clientOwnerId.Value = clientOwnerId;
+    }
+    public ulong GetClientOwnerId()
+    {
+        return clientOwnerId.Value;
     }
 
     public void SetOwnerColorField(UnityEngine.Color color)
@@ -63,26 +75,26 @@ public class Card : NetworkBehaviour
 
         return PriceInfrastructure;
     }
-    public int GetPhaseRentCountry() => PhaseRentCountry;
+    public int GetPhaseRentCountry() => PhaseRentCountry.Value;
     public void PlayerUpgradeCity()
     {
-        PhaseRentCountry++;
+        PhaseRentCountry.Value++;
 
-        if (PhaseRentCountry == 1)
+        if (PhaseRentCountry.Value == 1)
         {
             BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
             BoardController.Instance.TurnOffButtonSellCard(false);
         }
-        if (PhaseRentCountry == 5)
+        if (PhaseRentCountry.Value == 5)
         {
             BoardController.Instance.TurnOffButtonsUpgradeDemote(false,true);
         }
     }
     public void PlayerDemoteCity(int index)
     {
-        PhaseRentCountry--;
+        PhaseRentCountry.Value--;
 
-        if (PhaseRentCountry == 0)
+        if (PhaseRentCountry.Value == 0)
         {
             BoardController.Instance.TurnOffButtonsUpgradeDemote(true, false);
 
@@ -91,7 +103,7 @@ public class Card : NetworkBehaviour
                 BoardController.Instance.TurnOffButtonSellCard(true);//
             }
         }
-        if (PhaseRentCountry == 4)
+        if (PhaseRentCountry.Value == 4)
         {
             BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
         }
@@ -100,9 +112,27 @@ public class Card : NetworkBehaviour
     public int GetPriceHouse() => PriceHouse;
     public int GetPriceHotel() => PriceHotel;
 
-    public void SetPlayerOwner(Player player)
+    public void SetPlayerOwner(Player player, ServerRpcParams rpcParams = default)
     {
         PlayerOwner = player;
+        UnityEngine.Debug.Log("PlayerOwner ServerRpc: " + player.GetPlayerId());
+
+        if (player.TryGetComponent(out NetworkObject networkObject))
+        {
+            var playerRef = new NetworkObjectReference(networkObject);
+            SetPlayerOwnerClientRpc(playerRef);
+        }
+    }
+    [ClientRpc]
+    public void SetPlayerOwnerClientRpc(NetworkObjectReference playerRef)
+    {
+        if (playerRef.TryGet(out NetworkObject playerNetworkObject))
+        {
+            Player playerComponent = playerNetworkObject.GetComponent<Player>();
+            PlayerOwner = playerComponent;
+
+            UnityEngine.Debug.Log("PlayerOwner ClientRpc: " + PlayerOwner.GetPlayerId());
+        }
     }
     public void ShowHideCardPriceText(bool res)
     {
@@ -116,9 +146,9 @@ public class Card : NetworkBehaviour
     }
     public void SetCardUpgradeOrNot(bool res)
     {
-        CardCanUpgrade = res;
+        CardCanUpgrade.Value = res;
     }
-    public bool GetCanCardUpgradeOrNot() => CardCanUpgrade;
+    public bool GetCanCardUpgradeOrNot() => CardCanUpgrade.Value;
 
     public void GetInfoForCardCountryInfoUpdate(TextMeshProUGUI[] textComponent)
     {
@@ -146,7 +176,7 @@ public class Card : NetworkBehaviour
 
     public int HowManyRentToPayForCountryCard()
     {
-        switch (PhaseRentCountry)
+        switch (PhaseRentCountry.Value)
         {
             case 0://rent
                 {

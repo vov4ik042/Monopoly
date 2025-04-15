@@ -9,7 +9,6 @@ public class CharacterColorSelectUI : MonoBehaviour
     [SerializeField] private Image image;
     [SerializeField] private GameObject selectedGameObject;
 
-
     private void Awake()
     {
         GetComponent<Button>().onClick.AddListener(() => { 

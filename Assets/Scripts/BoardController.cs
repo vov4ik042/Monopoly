@@ -62,7 +62,7 @@ public class BoardController : NetworkBehaviour
 
     private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
     {
-        UnityEngine.UI.Button[] ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
+        /*UnityEngine.UI.Button[] */ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
 
         ButtonsPanelCardInfo[0].onClick.AddListener(PLayerUpgradeCard);
         ButtonsPanelCardInfo[1].onClick.AddListener(PLayerDemoteCard);
@@ -100,7 +100,7 @@ public class BoardController : NetworkBehaviour
 
         if (allSameOwner)
         {
-            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.playerID}!");//
+            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.GetPlayerId()}!");//
             MakeCardsCountryPossibleToUpgrade(listCitiesCountry, true);
         }
         else
@@ -166,6 +166,8 @@ public class BoardController : NetworkBehaviour
     }
     private void ShowOrHideCardInfo()
     {
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+
         if (!IsPointerOverUIWithTag("CardBoardTextField") && IsPointerOverUI())//Проверяем, был ли клик по UI
         {
             if (IsPointerOverUIWithTag("cardInfoPref"))
@@ -213,12 +215,14 @@ public class BoardController : NetworkBehaviour
                         index != 35 && index != 38 && index != 0 && index != 10 && index != 20 && index != 30) // Special cards
                     {
                         bool owner = VerifyCardOwner(index);
-                        bool result = CurrentPLayerIsOwnThisCard(index);
 
-                        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)
+                        //Debug.Log("owner: " + owner);
+                        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Countries cards
                         {
                             if (owner)
                             {
+                                bool result = CurrentPlayerIsOwnThisCard(index, localId);
+                                //Debug.Log("CurrentPlayerIsOwnThisCard: " + result);
                                 if (result)
                                 {
                                     CreatePanelForCardInfo(3, index);
@@ -229,10 +233,12 @@ public class BoardController : NetworkBehaviour
                                 }
                             }
                         }
-                        else
+                        else//Infrastructuries cards
                         {
                             if (owner)
                             {
+                                bool result = CurrentPlayerIsOwnThisCard(index, localId);
+
                                 if (result)
                                 {
                                     CreatePanelForCardInfo(1, index);
@@ -284,12 +290,13 @@ public class BoardController : NetworkBehaviour
     private bool VerifyCardOwner(int index)
     {
         var card = boardCardPositions[index].GetComponent<Card>();
-
+        //Debug.Log("VerifyCardOwner card: " + card);
         if (card.GetPlayerOwner() != null)
         {
+            //Debug.Log("VerifyCardOwner GetPlayerOwner: true");
             return true;
         }
-
+        //Debug.Log("VerifyCardOwner GetPlayerOwner: false");
         return false;
     }
 
@@ -363,10 +370,10 @@ public class BoardController : NetworkBehaviour
         RectTransform rectTransform = currentCardPanelOpenInfo.GetComponent<RectTransform>();
         rectTransform.anchoredPosition = position;
 
-        Player player = boardCardPositions[index].GetComponent<Card>().GetPlayerOwner();
-
+        ulong clientOwnerId = boardCardPositions[index].GetComponent<Card>().GetClientOwnerId();
+        //Debug.Log("panel playerID:" + clientOwnerId + " index: " + index);
         TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
-        textComponent[0].text = "Owner " + player.playerID;//Заменить на имя, в будущем
+        textComponent[0].text = "Owner " + MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)clientOwnerId);
     }
 
     private Vector2 TypeOfOperationForCreatingPanelForCardInfo(int typeOperation, int index)
@@ -379,11 +386,13 @@ public class BoardController : NetworkBehaviour
         {
             case 0://Only view card owner for infrastructure
                 {
+                    Debug.Log("case 0");
                     position = new Vector2(-742.0f, -315.0f);
                     break;
                 }
             case 1://View full panel for infrastructure
                 {
+                    Debug.Log("case 1");
                     position = new Vector2(-742.0f, -395.0f);
 
                     ButtonsPanelCardInfo[0].gameObject.SetActive(false);
@@ -395,11 +404,13 @@ public class BoardController : NetworkBehaviour
                 }
             case 2://Only view card owner for country
                 {
+                    Debug.Log("case 2");
                     position = new Vector2(-742.0f, -335.0f);
                     break;
                 }
             case 3://View full panel for country
                 {
+                    Debug.Log("case 3");
                     position = new Vector2(-742.0f, -415.0f);
                     Card card = boardCardPositions[index].GetComponent<Card>();
                     bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
@@ -461,14 +472,19 @@ public class BoardController : NetworkBehaviour
         }
     }
 
-    private bool CurrentPLayerIsOwnThisCard(int index)
+    private bool CurrentPlayerIsOwnThisCard(int index, ulong clientId)
     {
-        Player player1 = GameController.Instance.GetCurrentPlayer();
-        Player player2 = boardCardPositions[index].GetComponent<Card>().GetPlayerOwner();
-
-        if (player1 == player2)
+        Card card = boardCardPositions[index].GetComponent<Card>();
+        //Debug.Log("card.GetClientOwnerId(): " + card.GetClientOwnerId() + " clientId: " + clientId);
+        if (card.GetClientOwnerId() == clientId)
         {
-            return true;
+            int currentPlayerIndex = GameController.Instance.GetCurrentPlayerIndex();
+            int playerOwnerId = (int)boardCardPositions[index].GetComponent<Card>().GetClientOwnerId();
+            //Debug.Log("currentPlayerIndex: " + currentPlayerIndex + " GetPlayerOwner: " + player.playerID);
+            if (currentPlayerIndex == playerOwnerId)
+            {
+                return true;
+            }
         }
 
         return false;

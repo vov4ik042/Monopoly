@@ -212,6 +212,10 @@ public class MonopolyMultiplayer : NetworkBehaviour
         PlayerData playerData = playerDataNetworkList[playerIndex];
         return PlayerColorList[playerData.colorId];
     }
+    public FixedString64Bytes GetPlayerNameFromPlayerId(int playerIndex)
+    {
+        return playerDataNetworkList[playerIndex].playerName;
+    }
 
     public void ChangePlayerColor(int colorId)
     {

@@ -11,12 +11,12 @@ public class ToolTip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("Enter");
-        toolTipPrefab.gameObject.SetActive(true);
+        //toolTipPrefab.gameObject.SetActive(true);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         Debug.Log("Exit");
-        toolTipPrefab.gameObject.SetActive(false);
+        //toolTipPrefab.gameObject.SetActive(false);
     }
 }

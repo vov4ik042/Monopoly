@@ -21,8 +21,8 @@ public class GameController : NetworkBehaviour
     [SerializeField] private Button btnWaitingDown;
 
     public static GameController Instance;
-    private int startMoneyPlayer = 1500;//465
-    private int steps = 1;//Кол-во клеток перемещения
+    private int startMoneyPlayer = 360;//465
+    public int steps = 1;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
     private List<Player> players = new List<Player>(); // Список всех игроков
@@ -43,7 +43,7 @@ public class GameController : NetworkBehaviour
         });
         btnWaitingUp.onClick.AddListener(() => {
             btnTurnController(5);
-            PlayerBuyCardServerRpc();
+            PlayerBuyCard();
         });
         btnWaitingDown.onClick.AddListener(() => {
             EndTurn();
@@ -157,7 +157,7 @@ public class GameController : NetworkBehaviour
     public void SetStepsValueServerRpc(int value)
     {
         //steps = value;
-        int player = players[currentPlayerIndex.Value].playerID;
+        int player = players[currentPlayerIndex.Value].GetPlayerId();
 
         Debug.Log("Игроку " + player + " выпало " + steps);
 
@@ -170,6 +170,10 @@ public class GameController : NetworkBehaviour
         Debug.Log("Игроку " + player + " выпало " + steps);
     }
 
+    public int GetCurrentPlayerIndex()
+    {
+        return currentPlayerIndex.Value;
+    }
     public Player GetCurrentPlayer()
     {
         if (IsHost)
@@ -186,6 +190,7 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestCurrentPlayerServerRpc(ServerRpcParams rpcParams = default)
     {
+        Debug.Log("RequestCurrentPlayerServerRpc");
         if (players.Count == 0) return;
 
         Player currentPlayer = players[currentPlayerIndex.Value];
@@ -194,21 +199,15 @@ public class GameController : NetworkBehaviour
         {
             SendCurrentPlayerClientRpc(new NetworkObjectReference(networkObject), rpcParams.Receive.SenderClientId);
         }
-        else
-        {
-            Debug.Log("Err");
-        }
     }
 
     [ClientRpc]
     private void SendCurrentPlayerClientRpc(NetworkObjectReference playerRef, ulong clientId)
     {
-        if (playerRef.TryGet(out NetworkObject playerNew))
+        if (playerRef.TryGet(out NetworkObject playerNew))      
         {
-            if (NetworkManager.Singleton.LocalClientId == clientId)
-            {
-                cachedCurrentPlayer = playerNew.GetComponent<Player>();
-            }
+            cachedCurrentPlayer = playerNew.GetComponent<Player>();
+            Debug.Log("cachedCurrentPlayer: " + cachedCurrentPlayer.GetPlayerId());
         }
     }
 
@@ -295,13 +294,20 @@ public class GameController : NetworkBehaviour
         }
     }
 
+    public void PlayerBuyCard()
+    {
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+        Debug.Log("PlayerBuyCard client id: " + localId);
+        PlayerBuyCardServerRpc(localId);
+    }
+
     [ServerRpc(RequireOwnership = false)]
-    private void PlayerBuyCardServerRpc()
+    private void PlayerBuyCardServerRpc(ulong clientId)
     {
         int cardIndex = BoardController.Instance.WhatCardNumber();
         int cardCost = BoardController.Instance.SumCardCost();
 
-        players[currentPlayerIndex.Value].BuyCard(cardIndex, cardCost, players[currentPlayerIndex.Value]);
+        players[currentPlayerIndex.Value].BuyCard(cardIndex, cardCost, players[currentPlayerIndex.Value], clientId);
 
         BoardController.Instance.BuyCityOrInfrastructureReact(cardIndex, players[currentPlayerIndex.Value]);
         BoardController.Instance.UpdateColorCardOnBoard(currentPlayerIndex.Value);
@@ -342,7 +348,7 @@ public class GameController : NetworkBehaviour
 
             Player newPlayer = playerObject.GetComponent<Player>();
             newPlayer.SetPlayerMoney(startMoneyPlayer);
-            newPlayer.playerID = i;
+            newPlayer.SetPlayerId(i);
             newPlayer.playerPref = playerObject;
 
             players.Add(newPlayer);
@@ -465,7 +471,7 @@ public class GameController : NetworkBehaviour
         });
         btnWaitingUp.onClick.RemoveListener(() => {
             btnTurnController(5);
-            PlayerBuyCardServerRpc();
+            PlayerBuyCard();
         });
         btnWaitingDown.onClick.RemoveListener(() => {
             EndTurn();

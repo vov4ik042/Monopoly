@@ -17,14 +17,12 @@ public class Player : NetworkBehaviour
     public GameObject playerPref;
 
     private NetworkVariable<int> _moneyPlayer = new NetworkVariable<int>(0);
-    private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
     private NetworkVariable<int> currentPosition = new NetworkVariable<int>(0);
+    private NetworkVariable<int> playerID = new NetworkVariable<int>(0);
+    private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
+    private NetworkVariable<bool> Bankrupt = new NetworkVariable<bool>(false);//
 
-    public int playerID { get; set; }
-
-    public static int playerCounter = 0;
-    private int PhaseRentInfrastructure { get; set; } = 0;
-    public bool Bankrupt { get; set; } = false;
+    private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
 
     private void Awake()
     {
@@ -36,14 +34,20 @@ public class Player : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
-        //MakeDefaultcurrentPositionServerRpc();
         //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
     }
-
+    public void SetPlayerId(int index)
+    {
+        playerID.Value = index;
+    }
+    public int GetPlayerId()
+    {
+        return playerID.Value;
+    }
     public void SetPlayerMoney(int value)
     {
         _moneyPlayer.Value += value;
-        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, _moneyPlayer.Value);
+        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID.Value, _moneyPlayer.Value);
     }
     public int GetPlayerMoney()
     { 
@@ -62,7 +66,7 @@ public class Player : NetworkBehaviour
         material.color = color;
     }
 
-    public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure;
+    public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure.Value;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
         float playerHeight = 0.16f;
@@ -123,12 +127,19 @@ public class Player : NetworkBehaviour
         }
     }
 
-    public void BuyCard(int cardIndex, int cardCost, Player player)
+    public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)
     {
+        ViewClientIdClientRpc(clientId);
         Card card = BoardController.Instance.ReturnCardObject(cardIndex);
         SetPlayerMoney(-cardCost);
         card.SetPlayerOwner(player);
+        card.SetClientOwnerId(clientId);
         card.ShowHideCardPriceText(false);
+    }
+    [ClientRpc]
+    private void ViewClientIdClientRpc(ulong clientId)
+    {
+        Debug.Log("ViewClientIdClientRpc client id: " + clientId);
     }
 
     public void SellCard(int cardPrice, int index)
@@ -136,6 +147,7 @@ public class Player : NetworkBehaviour
         Card card = BoardController.Instance.ReturnCardObject(index);
         SetPlayerMoney(cardPrice / 2);//При продаже возвращается только 50% от стоимости клетки
         card.SetPlayerOwner(null);
+        card.SetClientOwnerId(0);
         card.ShowHideCardPriceText(true);
         Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPlayerOwner());
     }
@@ -166,13 +178,13 @@ public class Player : NetworkBehaviour
 
     private IEnumerator VerifyPlayerMoney()
     {
-        while (GetPlayerMoney() < 0 && Bankrupt == false)
+        while (GetPlayerMoney() < 0 && Bankrupt.Value == false)
         {
             yield return null;
         }
     }
-    public void PlayerBuyCardInfrastructure(int index) => PhaseRentInfrastructure++;
-    public void PlayerSellCardInfrastructure(int index) => PhaseRentInfrastructure--;
+    public void PlayerBuyCardInfrastructure(int index) => PhaseRentInfrastructure.Value++;
+    public void PlayerSellCardInfrastructure(int index) => PhaseRentInfrastructure.Value--;
     private void playerRotateModel()
     {
         transform.rotation *= Quaternion.Euler(0,90,0);
