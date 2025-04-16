@@ -21,8 +21,8 @@ public class GameController : NetworkBehaviour
     [SerializeField] private Button btnWaitingDown;
 
     public static GameController Instance;
-    private int startMoneyPlayer = 360;//465
-    public int steps = 1;//Кол-во клеток перемещения
+    private int startMoneyPlayer = 510;//465
+    public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
     private List<Player> players = new List<Player>(); // Список всех игроков
@@ -190,7 +190,7 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestCurrentPlayerServerRpc(ServerRpcParams rpcParams = default)
     {
-        Debug.Log("RequestCurrentPlayerServerRpc");
+        //Debug.Log("RequestCurrentPlayerServerRpc");
         if (players.Count == 0) return;
 
         Player currentPlayer = players[currentPlayerIndex.Value];
@@ -207,7 +207,7 @@ public class GameController : NetworkBehaviour
         if (playerRef.TryGet(out NetworkObject playerNew))      
         {
             cachedCurrentPlayer = playerNew.GetComponent<Player>();
-            Debug.Log("cachedCurrentPlayer: " + cachedCurrentPlayer.GetPlayerId());
+            //Debug.Log("cachedCurrentPlayer: " + cachedCurrentPlayer.GetPlayerId());
         }
     }
 

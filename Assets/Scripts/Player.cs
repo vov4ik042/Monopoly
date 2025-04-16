@@ -22,19 +22,11 @@ public class Player : NetworkBehaviour
     private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
     private NetworkVariable<bool> Bankrupt = new NetworkVariable<bool>(false);//
 
-    private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
-
     private void Awake()
     {
         material = new Material(MeshRenderer1.material);
         MeshRenderer1.material = material;
         MeshRenderer2.material = material;
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        //Debug.Log($"[{NetworkManager.LocalClientId}] IsOwner: {IsOwner}, playerPrefab: {playerPrefab}, This Object: {gameObject}");
-        //_moneyPlayer.Subscribe(CheckIfPlayerIsCurrentPlayer).AddTo(_compositeDisposable);
     }
     public void SetPlayerId(int index)
     {
@@ -110,23 +102,6 @@ public class Player : NetworkBehaviour
         //Debug.Log("currentPosition " + currentPosition.Value);
     }
 
-    private void CheckIfPlayerIsCurrentPlayer(int moneyPlayerNew)
-    {
-        if (this == GameController.Instance.GetCurrentPlayer())
-        {
-            if (BoardController.Instance.GetPanelForCardInfoIsCreated())
-            {
-                int sum = BoardController.Instance.SumCardCostForOpenInfo();
-
-                if (PlayerHasEnoughMoneyToUpgrade(sum))
-                {
-                    Debug.Log("Player can upgrade even when money update");
-                    BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
-                }
-            }
-        }
-    }
-
     public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)
     {
         ViewClientIdClientRpc(clientId);
@@ -185,10 +160,6 @@ public class Player : NetworkBehaviour
     }
     public void PlayerBuyCardInfrastructure(int index) => PhaseRentInfrastructure.Value++;
     public void PlayerSellCardInfrastructure(int index) => PhaseRentInfrastructure.Value--;
-    private void playerRotateModel()
-    {
-        transform.rotation *= Quaternion.Euler(0,90,0);
-    }
 
     public void PlayerGotTreasure()
     {

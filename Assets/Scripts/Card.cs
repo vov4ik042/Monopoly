@@ -26,6 +26,7 @@ public class Card : NetworkBehaviour
 
     private string InfrastructureName;
     private int PriceInfrastructure, OneInfrastructure, TwoInfrastructure, ThreeInfrastructure, FourInfrastructure, FiveInfrastructure;//For infrastructure cards;
+
     public UnityEngine.Color IntToColor(int value)
     {
         byte a = (byte)((value >> 24) & 0xFF);
@@ -76,51 +77,38 @@ public class Card : NetworkBehaviour
         return PriceInfrastructure;
     }
     public int GetPhaseRentCountry() => PhaseRentCountry.Value;
-    public void PlayerUpgradeCity()
+    public void SetPhaseRentCountry(bool res)
     {
-        PhaseRentCountry.Value++;
-
-        if (PhaseRentCountry.Value == 1)
+        if (res)
         {
-            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
-            BoardController.Instance.TurnOffButtonSellCard(false);
+            PhaseRentCountry.Value++;
         }
-        if (PhaseRentCountry.Value == 5)
+        else
         {
-            BoardController.Instance.TurnOffButtonsUpgradeDemote(false,true);
-        }
-    }
-    public void PlayerDemoteCity(int index)
-    {
-        PhaseRentCountry.Value--;
-
-        if (PhaseRentCountry.Value == 0)
-        {
-            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, false);
-
-            if (BoardController.Instance.FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
-            {
-                BoardController.Instance.TurnOffButtonSellCard(true);//
-            }
-        }
-        if (PhaseRentCountry.Value == 4)
-        {
-            BoardController.Instance.TurnOffButtonsUpgradeDemote(true, true);
+            PhaseRentCountry.Value--;
         }
     }
     public string GetCityName() => CityName;
+    public string GetInfrastructureName() => InfrastructureName;
     public int GetPriceHouse() => PriceHouse;
     public int GetPriceHotel() => PriceHotel;
 
     public void SetPlayerOwner(Player player, ServerRpcParams rpcParams = default)
     {
         PlayerOwner = player;
-        UnityEngine.Debug.Log("PlayerOwner ServerRpc: " + player.GetPlayerId());
 
-        if (player.TryGetComponent(out NetworkObject networkObject))
+        if (player != null)
         {
-            var playerRef = new NetworkObjectReference(networkObject);
-            SetPlayerOwnerClientRpc(playerRef);
+            if (player.TryGetComponent(out NetworkObject networkObject))
+            {
+                var playerRef = new NetworkObjectReference(networkObject);
+                SetPlayerOwnerClientRpc(playerRef);
+            }
+            UnityEngine.Debug.Log("PlayerOwner ServerRpc: " + player.GetPlayerId());
+        }
+        else
+        {
+            SetPlayerOwnerNullClientRpc();
         }
     }
     [ClientRpc]
@@ -133,6 +121,11 @@ public class Card : NetworkBehaviour
 
             UnityEngine.Debug.Log("PlayerOwner ClientRpc: " + PlayerOwner.GetPlayerId());
         }
+    }
+    [ClientRpc]
+    public void SetPlayerOwnerNullClientRpc()
+    {
+        PlayerOwner = null;
     }
     public void ShowHideCardPriceText(bool res)
     {
@@ -252,8 +245,7 @@ public class Card : NetworkBehaviour
     public void InitializeCardInfrastructure(string infrastructureName, int priceInfrastructure, int oneInfrastructure, int twoInfrastructure,
         int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure)
     {
-        CityName = infrastructureName;
-        //int priceInfrastructure, int oneInfrastructure, int twoInfrastructure, int threeInfrastructure, int fourInfrastructure, int fiveInfrastructure
+        InfrastructureName = infrastructureName;
         PriceInfrastructure = priceInfrastructure;
         OneInfrastructure = oneInfrastructure;
         TwoInfrastructure = twoInfrastructure;

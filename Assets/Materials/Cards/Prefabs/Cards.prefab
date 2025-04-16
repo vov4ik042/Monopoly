@@ -386,7 +386,7 @@ GameObject:
   - component: {fileID: 3452857872209738612}
   - component: {fileID: 2746699106869794481}
   - component: {fileID: 5966471144573209026}
-  - component: {fileID: 2844427641551577669}
+  - component: {fileID: 7260620334056841121}
   m_Layer: 6
   m_Name: Cards
   m_TagString: Untagged
@@ -503,7 +503,7 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &2844427641551577669
+--- !u!114 &7260620334056841121
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

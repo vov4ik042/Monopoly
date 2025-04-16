@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4514991423394439931}
   - component: {fileID: 2753696817856858990}
   m_Layer: 5
-  m_Name: Sell
+  m_Name: SellButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -116,7 +116,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 3135374983524334159}
   m_OnClick:
     m_PersistentCalls:
@@ -147,7 +147,7 @@ GameObject:
   - component: {fileID: 7500622791171479168}
   - component: {fileID: 2967165994000861738}
   m_Layer: 5
-  m_Name: Demote
+  m_Name: DemoteButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -280,7 +280,7 @@ GameObject:
   - component: {fileID: 6235203389632369383}
   - component: {fileID: 2623574740351193638}
   m_Layer: 5
-  m_Name: Upgrade
+  m_Name: UpgradeButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -512,7 +512,7 @@ GameObject:
   - component: {fileID: 5187575406893904889}
   - component: {fileID: 2289967075462921004}
   m_Layer: 5
-  m_Name: Owner
+  m_Name: OwnerText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

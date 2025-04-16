@@ -10,6 +10,7 @@ using Unity.VisualScripting;
 using UnityEngine.EventSystems;
 using UniRx;
 using Unity.Netcode;
+using System.Drawing;
 
 public class BoardController : NetworkBehaviour
 {
@@ -155,13 +156,13 @@ public class BoardController : NetworkBehaviour
         boardCardPositions[37].GetComponent<Card>().InitializeCardCountry("Houten", "Netherlands", 35, 175, 500, 1100, 1300, 1500, 350, 200, 200);
         boardCardPositions[39].GetComponent<Card>().InitializeCardCountry("Amsterdam", "Netherlands", 50, 200, 600, 1400, 1700, 2000, 400, 200, 200);
 
-        boardCardPositions[2].GetComponent<CardSpecial>().InitializeCard("Luxury   Tax", "15%");
-        boardCardPositions[22].GetComponent<CardSpecial>().InitializeCard("Poor       Tax", "5%");
+        boardCardPositions[2].GetComponent<CardSpecial>().InitializeCard("Luxury\nTax", "15%");
+        boardCardPositions[22].GetComponent<CardSpecial>().InitializeCard("Poor\nTax", "5%");
 
         boardCardPositions[8].GetComponent<Card>().InitializeCardInfrastructure("Factory", 200, 25, 50, 100, 200, 400);//Infrastructure
         boardCardPositions[13].GetComponent<Card>().InitializeCardInfrastructure("Stadium", 200, 25, 50, 100, 200, 400);
-        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug    Store", 200, 25, 50, 100, 200, 400);
-        boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas   Station", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug\nStore", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas\nStation", 200, 25, 50, 100, 200, 400);
         boardCardPositions[36].GetComponent<Card>().InitializeCardInfrastructure("Airport", 200, 25, 50, 100, 200, 400);
     }
     private void ShowOrHideCardInfo()
@@ -386,13 +387,13 @@ public class BoardController : NetworkBehaviour
         {
             case 0://Only view card owner for infrastructure
                 {
-                    Debug.Log("case 0");
+                    //Debug.Log("case 0");
                     position = new Vector2(-742.0f, -315.0f);
                     break;
                 }
             case 1://View full panel for infrastructure
                 {
-                    Debug.Log("case 1");
+                    //Debug.Log("case 1");
                     position = new Vector2(-742.0f, -395.0f);
 
                     ButtonsPanelCardInfo[0].gameObject.SetActive(false);
@@ -404,71 +405,81 @@ public class BoardController : NetworkBehaviour
                 }
             case 2://Only view card owner for country
                 {
-                    Debug.Log("case 2");
+                    //Debug.Log("case 2");
                     position = new Vector2(-742.0f, -335.0f);
                     break;
                 }
             case 3://View full panel for country
                 {
-                    Debug.Log("case 3");
+                    //Debug.Log("case 3");
                     position = new Vector2(-742.0f, -415.0f);
                     Card card = boardCardPositions[index].GetComponent<Card>();
                     bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
 
-                    if (cardCanUpgrade == false)
+                    if (cardCanUpgrade)
                     {
-                        TurnOffButtonsUpgradeDemote(false, false);
-                    }
-                    else
-                    {
-                        if (!FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
-                        {
-                            TurnOffButtonSellCard(false);
-                        }
-                        if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
-                        {
-                            int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
-
-                            if (phase == 0)
-                            {
-                                TurnOffButtonsUpgradeDemote(true, false);
-                            }
-                            else
-                            {
-                                if (phase == 5)
-                                {
-                                    TurnOffButtonsUpgradeDemote(false, true);
-                                }
-                                else
-                                {
-                                    TurnOffButtonsUpgradeDemote(true, true);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            TurnOffButtonsUpgradeDemote(false, true);
-                        }
+                        GetAndSetButtonsForPanelInfo(index);
                     }
                     break;
                 }
         }
         return position;
     }
-
-    public void TurnOffButtonsUpgradeDemote(bool res1, bool res2)
+    public void GetAndSetButtonsForPanelInfo(int index)//Поставить видимость кнопок изходя из ситуации
     {
-        if (ButtonsPanelCardInfo[0] != null)
+        int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
+
+        if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
         {
-            ButtonsPanelCardInfo[0].interactable = res1;
-            ButtonsPanelCardInfo[1].interactable = res2;
+            ShowHideUpgradeButton(true);
+        }
+        else
+        {
+            ShowHideUpgradeButton(false);
+        }
+
+        if (phase == 0)
+        {
+            ShowHideDemoteButton(false);
+        }
+        else
+        {
+            ShowHideDemoteButton(true);
+        }
+
+        if (phase == 5)
+        { 
+            ShowHideUpgradeButton(false);
+        }
+
+        if (FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
+        {
+            ShowHideSellButton(true);
+        }
+        else
+        {
+            ShowHideSellButton(false);
         }
     }
-    public void TurnOffButtonSellCard(bool res1)
+    public void ShowHideUpgradeButton(bool res)
     {
         if (ButtonsPanelCardInfo[0] != null)
         {
-            ButtonsPanelCardInfo[2].interactable = res1;
+            ButtonsPanelCardInfo[0].interactable = res;
+        }
+    }
+    public void ShowHideDemoteButton(bool res)
+    {
+        if (ButtonsPanelCardInfo[1] != null)
+        {
+            ButtonsPanelCardInfo[1].interactable = res;
+        }
+    }
+    public void ShowHideSellButton(bool res)
+    {
+        if (ButtonsPanelCardInfo[2] != null)
+        {
+            ButtonsPanelCardInfo[2].interactable = res;
         }
     }
 
@@ -604,15 +615,13 @@ public class BoardController : NetworkBehaviour
 
     public void UpdateColorCardOnBoard(int playerIndex)
     {
-        Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
+        UnityEngine.Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
         boardCardPositions[currentPlayerPosition].GetComponent<Card>().SetOwnerColorField(color);
     }
 
-    public void HideColorCardOnBoard()
+    public void SetDefaultColorCardOnBoard()
     {
-        Transform obj = boardCardPositions[currentCardInfoIndex].transform.Find("Color");
-        MeshRenderer meshRenderer = obj.GetComponent<MeshRenderer>();
-        meshRenderer.material.color = new Color(0.4056604f, 0.4056604f, 0.4056604f, 1);
+        boardCardPositions[currentCardInfoIndex].GetComponent<Card>().SetOwnerColorField(new UnityEngine.Color(0.4056604f, 0.4056604f, 0.4056604f, 1));
     }
 
     public void PutPriceAndNameOnCardsUI()
@@ -628,7 +637,15 @@ public class BoardController : NetworkBehaviour
                 if (i != 2 && i != 22)
                 {
                     cardTextField[0].text = boardCardPositions[i].GetComponent<Card>().GetPriceCard(i).ToString() + "$";
-                    cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetCityName();
+
+                    if (i != 8 && i != 13 && i != 28 && i != 33 && i != 36)
+                    {
+                        cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetCityName();
+                    }
+                    else
+                    {
+                        cardTextField[1].text = boardCardPositions[i].GetComponent<Card>().GetInfrastructureName();
+                    }
                 }
                 if (i == 2)
                 {
@@ -689,17 +706,13 @@ public class BoardController : NetworkBehaviour
         int priceToUpgrade = card.GetPriceHotel();
 
         player.UpgradeOrDemoteCity(priceToUpgrade);
-        card.PlayerUpgradeCity();
+        card.SetPhaseRentCountry(true);
         //TablePlayersUI.Instance.UpdateInfo();
 
-        Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
-
-        if (!CheckPlayerHasEnoughMoneyToUpgrade(currentCardInfoIndex))//Проверка на наличие денег у игрока на следующую покупку
-        {
-            TurnOffButtonsUpgradeDemote(false, true);
-        }
-
         CreateUIForRentPrice(1, currentCardInfoIndex);
+        GetAndSetButtonsForPanelInfo(currentCardInfoIndex);
+
+        Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
     }
     private void PLayerDemoteCard()
     {
@@ -709,12 +722,13 @@ public class BoardController : NetworkBehaviour
         int priceToDemote = card.GetPriceHotel() / 2;
 
         player.UpgradeOrDemoteCity(-priceToDemote);
-        card.PlayerDemoteCity(currentCardInfoIndex);
+        card.SetPhaseRentCountry(false);
         //TablePlayersUI.Instance.UpdateInfo();
 
-        Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
-
         CreateUIForRentPrice(1, currentCardInfoIndex);
+        GetAndSetButtonsForPanelInfo(currentCardInfoIndex);
+
+        Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
     }
     private void PLayerSellCard()
     {
@@ -729,8 +743,9 @@ public class BoardController : NetworkBehaviour
 
             SellCityOrInfrastructureReact(currentCardInfoIndex, player);
             //TablePlayersUI.Instance.UpdateInfo();
-            HideColorCardOnBoard();
+            SetDefaultColorCardOnBoard();
             DeleteCardPanelInfo();
+            Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
         }
         else
         {
@@ -744,7 +759,7 @@ public class BoardController : NetworkBehaviour
         Card card = boardCardPositions[index].GetComponent<Card>();
 
         int priceToUpgrade = card.GetPriceHotel();
-
+        Debug.Log("player: " + player + " card: " + card + " priceToUpgrade: " + priceToUpgrade);
         return player.PlayerHasEnoughMoneyToUpgrade(priceToUpgrade);
     }
 
