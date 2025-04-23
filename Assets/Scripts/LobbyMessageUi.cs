@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -54,7 +52,6 @@ public class LobbyMessageUi : MonoBehaviour
 
     private void MonopolyLobby_OnFailedToJoinGame(object sender, System.EventArgs e)
     {
-        Debug.Log("DisconnectReason: " + NetworkManager.Singleton.DisconnectReason);
         if (NetworkManager.Singleton.DisconnectReason == "")
         {
             ShowMessage("Failed to connect");

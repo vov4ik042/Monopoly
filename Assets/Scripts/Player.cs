@@ -1,61 +1,43 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Unity.VisualScripting;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
-using UniRx;
 using Unity.Netcode;
 
 public class Player : NetworkBehaviour
 {
-    [SerializeField] private MeshRenderer MeshRenderer1;
-    [SerializeField] private MeshRenderer MeshRenderer2;
-
-    private Material material;
-    public GameObject playerPref;
-
-    private NetworkVariable<int> _moneyPlayer = new NetworkVariable<int>(0);
-    private NetworkVariable<int> currentPosition = new NetworkVariable<int>(0);
-    private NetworkVariable<int> playerID = new NetworkVariable<int>(0);
+    private int playerID;
+    private int moneyPlayer;
+    private int currentPosition;
     private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
-    private NetworkVariable<bool> Bankrupt = new NetworkVariable<bool>(false);//
 
-    private void Awake()
+    private void Start()
     {
-        material = new Material(MeshRenderer1.material);
-        MeshRenderer1.material = material;
-        MeshRenderer2.material = material;
+        currentPosition = 0;
     }
-    public void SetPlayerId(int index)
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerIdServerRpc(int index)
     {
-        playerID.Value = index;
+        playerID = index;
+        SetPlayerIdClientRpc(index);
+    }
+    [ClientRpc]
+    public void SetPlayerIdClientRpc(int index)
+    {
+        playerID = index;
     }
     public int GetPlayerId()
     {
-        return playerID.Value;
+        return playerID;
     }
     public void SetPlayerMoney(int value)
     {
-        _moneyPlayer.Value += value;
-        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID.Value, _moneyPlayer.Value);
+        moneyPlayer += value;
+        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, moneyPlayer);
+        TablePlayersUI.Instance.UpdateInfo();
     }
     public int GetPlayerMoney()
     { 
-        return _moneyPlayer.Value;
-    }
-
-    public void SetPlayerColor(Color color, int playerId)
-    {
-        material.color = color;
-        SetPlayerColorClientRpc(playerId);
-    }
-    [ClientRpc]
-    public void SetPlayerColorClientRpc(int playerId)
-    {
-        Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerId);
-        material.color = color;
+        return moneyPlayer;
     }
 
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure.Value;
@@ -66,10 +48,10 @@ public class Player : NetworkBehaviour
 
         for (int i = 0; i < steps; i++)
         {
-            Vector3 startPosition = playerPref.transform.position;
+            Vector3 startPosition = gameObject.transform.position;
             float elapsedTime = 0f;
 
-            int nextPosition = currentPosition.Value + 1;
+            int nextPosition = currentPosition + 1;
 
             if (nextPosition == 40)
             {
@@ -90,33 +72,26 @@ public class Player : NetworkBehaviour
 
             while (elapsedTime < moveDuration)
             {
-                playerPref.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
+                gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime/moveDuration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            playerPref.transform.position = goTo;
-            currentPosition.Value = nextPosition;
-            BoardController.Instance.CurrentPlayerPosition(currentPosition.Value);
+            gameObject.transform.position = goTo;
+            currentPosition = nextPosition;
+            BoardController.Instance.CurrentPlayerPosition(currentPosition);
         }
         //Debug.Log("currentPosition " + currentPosition.Value);
     }
 
-    public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)
+    public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)//ServerRpc
     {
-        ViewClientIdClientRpc(clientId);
         Card card = BoardController.Instance.ReturnCardObject(cardIndex);
         SetPlayerMoney(-cardCost);
         card.SetPlayerOwner(player);
         card.SetClientOwnerId(clientId);
         card.ShowHideCardPriceText(false);
     }
-    [ClientRpc]
-    private void ViewClientIdClientRpc(ulong clientId)
-    {
-        Debug.Log("ViewClientIdClientRpc client id: " + clientId);
-    }
-
     public void SellCard(int cardPrice, int index)
     {
         Card card = BoardController.Instance.ReturnCardObject(index);
@@ -131,7 +106,7 @@ public class Player : NetworkBehaviour
     {
 
     }
-    public void PayRent(int index, Card card)
+    public void PayRent(int index, Card card)//ServerRpc
     {
         Player OwnerCardPlayer = card.GetPlayerOwner();
         int sumToPay;
@@ -147,17 +122,10 @@ public class Player : NetworkBehaviour
         Debug.Log("Плата за ренту: " + sumToPay);
         SetPlayerMoney(-sumToPay);
         OwnerCardPlayer.SetPlayerMoney(+sumToPay);
-        //TablePlayersUI.Instance.UpdateInfo();
-        StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
+
+        //StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
     }
 
-    private IEnumerator VerifyPlayerMoney()
-    {
-        while (GetPlayerMoney() < 0 && Bankrupt.Value == false)
-        {
-            yield return null;
-        }
-    }
     public void PlayerBuyCardInfrastructure(int index) => PhaseRentInfrastructure.Value++;
     public void PlayerSellCardInfrastructure(int index) => PhaseRentInfrastructure.Value--;
 

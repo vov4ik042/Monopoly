@@ -1,13 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Numerics;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class Card : NetworkBehaviour
 {
@@ -16,7 +10,8 @@ public class Card : NetworkBehaviour
     [SerializeField] private MeshRenderer colorOwnerField;
 
     private NetworkVariable<ulong> clientOwnerId = new NetworkVariable<ulong>(0);
-    private NetworkVariable<int> PhaseRentCountry = new NetworkVariable<int>(0);
+    //private NetworkVariable<int> PhaseRentCountry = new NetworkVariable<int>(0);
+    private int PhaseRentCountry = 0;
     private NetworkVariable<bool> CardCanUpgrade = new NetworkVariable<bool>(false);
 
     private Player PlayerOwner { get; set; } = null;
@@ -51,6 +46,11 @@ public class Card : NetworkBehaviour
         return clientOwnerId.Value;
     }
 
+    private void Update()
+    {
+        Debug.Log("Phase:" + PhaseRentCountry);
+    }
+
     public void SetOwnerColorField(UnityEngine.Color color)
     {
         colorOwnerField.material.color = color;
@@ -76,17 +76,23 @@ public class Card : NetworkBehaviour
 
         return PriceInfrastructure;
     }
-    public int GetPhaseRentCountry() => PhaseRentCountry.Value;
+    public int GetPhaseRentCountry() => PhaseRentCountry;
     public void SetPhaseRentCountry(bool res)
     {
         if (res)
         {
-            PhaseRentCountry.Value++;
+            PhaseRentCountry++;
         }
         else
         {
-            PhaseRentCountry.Value--;
+            PhaseRentCountry--;
         }
+        SetPhaseRentCountryClientRpc(PhaseRentCountry);
+    }
+    [ClientRpc]
+    public void SetPhaseRentCountryClientRpc(int res)
+    {
+        PhaseRentCountry = res;
     }
     public string GetCityName() => CityName;
     public string GetInfrastructureName() => InfrastructureName;
@@ -104,7 +110,7 @@ public class Card : NetworkBehaviour
                 var playerRef = new NetworkObjectReference(networkObject);
                 SetPlayerOwnerClientRpc(playerRef);
             }
-            UnityEngine.Debug.Log("PlayerOwner ServerRpc: " + player.GetPlayerId());
+            //UnityEngine.Debug.Log("PlayerOwner ServerRpc: " + player.GetPlayerId());
         }
         else
         {
@@ -119,7 +125,7 @@ public class Card : NetworkBehaviour
             Player playerComponent = playerNetworkObject.GetComponent<Player>();
             PlayerOwner = playerComponent;
 
-            UnityEngine.Debug.Log("PlayerOwner ClientRpc: " + PlayerOwner.GetPlayerId());
+            //UnityEngine.Debug.Log("PlayerOwner ClientRpc: " + PlayerOwner.GetPlayerId());
         }
     }
     [ClientRpc]
@@ -169,7 +175,7 @@ public class Card : NetworkBehaviour
 
     public int HowManyRentToPayForCountryCard()
     {
-        switch (PhaseRentCountry.Value)
+        switch (PhaseRentCountry)
         {
             case 0://rent
                 {

@@ -1,10 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Audio;
 using UnityEngine.UI;
-using TMPro;
-using static System.Net.Mime.MediaTypeNames;
 
 public class About : MonoBehaviour
 {

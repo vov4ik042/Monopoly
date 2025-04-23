@@ -1,16 +1,13 @@
+using Cysharp.Threading.Tasks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.UI;
 using TMPro;
-using System;
-using Unity.VisualScripting;
-using UnityEngine.EventSystems;
 using UniRx;
 using Unity.Netcode;
-using System.Drawing;
+using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class BoardController : NetworkBehaviour
 {
@@ -31,6 +28,7 @@ public class BoardController : NetworkBehaviour
     private UnityEngine.UI.Button[] ButtonsPanelCardInfo;//Кнопки панели
 
     private readonly Dictionary<string, ReactiveProperty<int>> _countries = new ();//Словарь всех стран и кол-во купленых городов
+    private int[] cardsOpenClients = new int[6];//Список открытых карт инфо
     private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
     private readonly Dictionary<string, int> _thresholds = new()
     {
@@ -51,7 +49,11 @@ public class BoardController : NetworkBehaviour
     private void Start()
     {
         AddCardsToListAndInitialize();//Для инициализация списка карт
-        InitializeAndSubscribeCountryValue();//Для реактивных значений
+        if (IsServer)
+        {
+            InitializeAndSubscribeCountryValue();//Для реактивных значений
+            InitializeListCardsInfo();
+        }
     }
     private void Update()
     {
@@ -60,14 +62,26 @@ public class BoardController : NetworkBehaviour
             ShowOrHideCardInfo();
         }
     }
-
+    private void InitializeListCardsInfo()
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            cardsOpenClients[i] = -1;
+        }
+    }
+    [ServerRpc(RequireOwnership = false)]
+    private void SetValueListCardsInfoServerRpc(int value, ulong clientId)
+    {
+        Debug.Log("SetValue card:" + value);
+        cardsOpenClients[clientId] = value;
+    }
     private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
     {
-        /*UnityEngine.UI.Button[] */ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
+        /*UnityEngine.UI.Button[]*/ ButtonsPanelCardInfo = PanelCardInfo.gameObject.GetComponentsInChildren<UnityEngine.UI.Button>();
 
-        ButtonsPanelCardInfo[0].onClick.AddListener(PLayerUpgradeCard);
-        ButtonsPanelCardInfo[1].onClick.AddListener(PLayerDemoteCard);
-        ButtonsPanelCardInfo[2].onClick.AddListener(PLayerSellCard);
+        ButtonsPanelCardInfo[0].onClick.AddListener(PlayerUpgradeCard);
+        ButtonsPanelCardInfo[1].onClick.AddListener(PlayerDemoteCard);
+        ButtonsPanelCardInfo[2].onClick.AddListener(PlayerSellCard);
     }
     private void InitializeAndSubscribeCountryValue()
     {
@@ -180,7 +194,7 @@ public class BoardController : NetworkBehaviour
             Debug.Log("Клик по UI — скрываем карту");
             if (currentCardOpenInfo != null)
             {
-                DeleteCardInfo();
+                DeleteCardInfo(localId);
             }
 
             if (currentCardPanelOpenInfo != null)
@@ -202,7 +216,7 @@ public class BoardController : NetworkBehaviour
                 {
                     if (currentCardOpenInfo != null)
                     {
-                        DeleteCardInfo();
+                        DeleteCardInfo(localId);
                     }
 
                     if (currentCardPanelOpenInfo != null)
@@ -212,60 +226,66 @@ public class BoardController : NetworkBehaviour
 
                     int index = cardCountry.GetCardIndex();
 
-                    if (index != 2 && index != 5 && index != 15 && index != 17 && index != 22 && index != 25 &&
-                        index != 35 && index != 38 && index != 0 && index != 10 && index != 20 && index != 30) // Special cards
-                    {
-                        bool owner = VerifyCardOwner(index);
-
-                        //Debug.Log("owner: " + owner);
-                        if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Countries cards
-                        {
-                            if (owner)
-                            {
-                                bool result = CurrentPlayerIsOwnThisCard(index, localId);
-                                //Debug.Log("CurrentPlayerIsOwnThisCard: " + result);
-                                if (result)
-                                {
-                                    CreatePanelForCardInfo(3, index);
-                                }
-                                else
-                                {
-                                    CreatePanelForCardInfo(2, index);
-                                }
-                            }
-                        }
-                        else//Infrastructuries cards
-                        {
-                            if (owner)
-                            {
-                                bool result = CurrentPlayerIsOwnThisCard(index, localId);
-
-                                if (result)
-                                {
-                                    CreatePanelForCardInfo(1, index);
-                                }
-                                else
-                                {
-                                    CreatePanelForCardInfo(0, index);
-                                }
-                            }
-                        }
-                        CreateCardInfoUI(index);
-                    }
+                    GetAndSetCardInfoAndPanelInfo(index, localId);
                 }
                 else//If not cardObject
                 {
-                    DeleteCardInfo();
+                    DeleteCardInfo(localId);
                     DeleteCardPanelInfo();
                 }
             }
             else//If nothing
             {
-                DeleteCardInfo();
+                DeleteCardInfo(localId);
                 DeleteCardPanelInfo();
             }
         }
     }
+    private void GetAndSetCardInfoAndPanelInfo(int index, ulong localId)
+    {
+        SetValueListCardsInfoServerRpc(index, localId);
+
+        if (index != 2 && index != 5 && index != 15 && index != 17 && index != 22 && index != 25 &&
+                index != 35 && index != 38 && index != 0 && index != 10 && index != 20 && index != 30) // Special cards
+        {
+            bool owner = VerifyCardOwner(index);
+
+            if (index != 8 && index != 13 && index != 28 && index != 33 && index != 36)//Countries cards
+            {
+                if (owner)
+                {
+                    bool result = CurrentPlayerIsOwnThisCard(index, localId);
+
+                    if (result)
+                    {
+                        CreatePanelForCardInfo(3, index);
+                    }
+                    else
+                    {
+                        CreatePanelForCardInfo(2, index);
+                    }
+                }
+            }
+            else//Infrastructuries cards
+            {
+                if (owner)
+                {
+                    bool result = CurrentPlayerIsOwnThisCard(index, localId);
+
+                    if (result)
+                    {
+                        CreatePanelForCardInfo(1, index);
+                    }
+                    else
+                    {
+                        CreatePanelForCardInfo(0, index);
+                    }
+                }
+            }
+            CreateCardInfoUI(index);
+        }
+    }
+
     private bool IsPointerOverUI()//понять как работает
     {
         return EventSystem.current.IsPointerOverGameObject();
@@ -291,13 +311,13 @@ public class BoardController : NetworkBehaviour
     private bool VerifyCardOwner(int index)
     {
         var card = boardCardPositions[index].GetComponent<Card>();
-        //Debug.Log("VerifyCardOwner card: " + card);
+
         if (card.GetPlayerOwner() != null)
         {
-            //Debug.Log("VerifyCardOwner GetPlayerOwner: true");
+
             return true;
         }
-        //Debug.Log("VerifyCardOwner GetPlayerOwner: false");
+
         return false;
     }
 
@@ -329,7 +349,6 @@ public class BoardController : NetworkBehaviour
             CreateUIForRentPrice(2, index);
         }
     }
-
     private void CreateUIForRentPrice(int operation, int index)
     {
         Transform gameObject1 = currentCardOpenInfo.transform.Find("UiPriceRent");
@@ -342,7 +361,7 @@ public class BoardController : NetworkBehaviour
 
             int StartPositionY = operation == 1 ? 118 : 92;
             int phase = operation == 1 ? card.GetPhaseRentCountry() : player.GetPhaseRentInfrastructure() - 1;
-
+            Debug.Log("phase: " + phase);
             if (phase != 0)
             {
                 position = new Vector2(129, StartPositionY - (phase * 51));
@@ -360,7 +379,6 @@ public class BoardController : NetworkBehaviour
             gameObject1.gameObject.SetActive(false);
         }
     }
-
     private void CreatePanelForCardInfo(int typeOperation, int index)
     {
         currentCardPanelOpenInfo = Instantiate(PanelForCardInfoOperations, objectCanvas);
@@ -376,7 +394,6 @@ public class BoardController : NetworkBehaviour
         TextMeshProUGUI[] textComponent = currentCardPanelOpenInfo.GetComponentsInChildren<TextMeshProUGUI>();
         textComponent[0].text = "Owner " + MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)clientOwnerId);
     }
-
     private Vector2 TypeOfOperationForCreatingPanelForCardInfo(int typeOperation, int index)
     {
         Vector2 position = new();
@@ -413,13 +430,7 @@ public class BoardController : NetworkBehaviour
                 {
                     //Debug.Log("case 3");
                     position = new Vector2(-742.0f, -415.0f);
-                    Card card = boardCardPositions[index].GetComponent<Card>();
-                    bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
-
-                    if (cardCanUpgrade)
-                    {
-                        GetAndSetButtonsForPanelInfo(index);
-                    }
+                    GetAndSetButtonsForPanelInfo(index);
                     break;
                 }
         }
@@ -427,42 +438,49 @@ public class BoardController : NetworkBehaviour
     }
     public void GetAndSetButtonsForPanelInfo(int index)//Поставить видимость кнопок изходя из ситуации
     {
-        int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
+        Card card = boardCardPositions[index].GetComponent<Card>();
+        bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
+        Debug.Log("cardCanUpgrade: " + cardCanUpgrade);
+        if (cardCanUpgrade)
+        {
+            int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
+            Debug.Log("phase: " + phase);
+            if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
+            {
+                ShowHideUpgradeButton(true);
+            }
+            else
+            {
+                ShowHideUpgradeButton(false);
+            }
 
-        if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
-        {
-            ShowHideUpgradeButton(true);
-        }
-        else
-        {
-            ShowHideUpgradeButton(false);
-        }
+            if (phase == 0)
+            {
+                ShowHideDemoteButton(false);
+            }
+            else
+            {
+                ShowHideDemoteButton(true);
+            }
 
-        if (phase == 0)
-        {
-            ShowHideDemoteButton(false);
-        }
-        else
-        {
-            ShowHideDemoteButton(true);
-        }
+            if (phase == 5)
+            { 
+                ShowHideUpgradeButton(false);
+            }
 
-        if (phase == 5)
-        { 
-            ShowHideUpgradeButton(false);
-        }
-
-        if (FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
-        {
-            ShowHideSellButton(true);
-        }
-        else
-        {
-            ShowHideSellButton(false);
+            if (FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(index))
+            {
+                ShowHideSellButton(true);
+            }
+            else
+            {
+                ShowHideSellButton(false);
+            }
         }
     }
     public void ShowHideUpgradeButton(bool res)
     {
+        //Debug.Log("ButtonsPanelCardInfo[0]: " + ButtonsPanelCardInfo[0]);
         if (ButtonsPanelCardInfo[0] != null)
         {
             ButtonsPanelCardInfo[0].interactable = res;
@@ -486,12 +504,12 @@ public class BoardController : NetworkBehaviour
     private bool CurrentPlayerIsOwnThisCard(int index, ulong clientId)
     {
         Card card = boardCardPositions[index].GetComponent<Card>();
-        //Debug.Log("card.GetClientOwnerId(): " + card.GetClientOwnerId() + " clientId: " + clientId);
+        //Debug.Log("card: " + card + " card.GetClientOwnerId: " + card.GetClientOwnerId() + " clientId: " + clientId);
         if (card.GetClientOwnerId() == clientId)
         {
             int currentPlayerIndex = GameController.Instance.GetCurrentPlayerIndex();
             int playerOwnerId = (int)boardCardPositions[index].GetComponent<Card>().GetClientOwnerId();
-            //Debug.Log("currentPlayerIndex: " + currentPlayerIndex + " GetPlayerOwner: " + player.playerID);
+
             if (currentPlayerIndex == playerOwnerId)
             {
                 return true;
@@ -506,7 +524,7 @@ public class BoardController : NetworkBehaviour
         currentPlayerPosition = field;
     }
 
-    public int CheckCardBoughtOrNot(Player player)
+    public int CheckCardBoughtOrNot(Player player)//ServerRpc
     {
         Card cardCountry = boardCardPositions[currentPlayerPosition].GetComponent<Card>();
 
@@ -536,10 +554,11 @@ public class BoardController : NetworkBehaviour
         Debug.Log("owner card " + num + " " + card.GetPlayerOwner());
     }
 
-    private void DeleteCardInfo()
+    private void DeleteCardInfo(ulong clientId)
     {
         Destroy(currentCardOpenInfo);
         currentCardOpenInfo = null;
+        SetValueListCardsInfoServerRpc(-1, clientId);
     }
 
     private void DeleteCardPanelInfo()
@@ -619,9 +638,9 @@ public class BoardController : NetworkBehaviour
         boardCardPositions[currentPlayerPosition].GetComponent<Card>().SetOwnerColorField(color);
     }
 
-    public void SetDefaultColorCardOnBoard()
+    public void SetDefaultColorCardOnBoard(int playerIndex)
     {
-        boardCardPositions[currentCardInfoIndex].GetComponent<Card>().SetOwnerColorField(new UnityEngine.Color(0.4056604f, 0.4056604f, 0.4056604f, 1));
+        boardCardPositions[playerIndex].GetComponent<Card>().SetOwnerColorField(new UnityEngine.Color(0.4056604f, 0.4056604f, 0.4056604f, 1));
     }
 
     public void PutPriceAndNameOnCardsUI()
@@ -661,7 +680,7 @@ public class BoardController : NetworkBehaviour
         }
     }
 
-    public void BuyCityOrInfrastructureReact(int index, Player player)
+    public void BuyCityOrInfrastructureReact(int index, Player player)//ServerRpc
     {
         string countryName = boardCardPositions[index].GetComponent<Card>().GetCountryName();
 
@@ -698,53 +717,70 @@ public class BoardController : NetworkBehaviour
             player.PlayerSellCardInfrastructure(index);// Increase count of infrastructure
         }
     }
-
-    private void PLayerUpgradeCard()
+    private void PlayerUpgradeCard()
     {
-        Player player = GameController.Instance.GetCurrentPlayer();
-        Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+        PlayerUpgradeCardServerRpc(currentCardInfoIndex, localId);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void PlayerUpgradeCardServerRpc(int currentCardIndex, ulong localId)
+    {
+        Player player = GameController.Instance.GetCurrentPlayerServerOnly();
+        Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
         int priceToUpgrade = card.GetPriceHotel();
 
         player.UpgradeOrDemoteCity(priceToUpgrade);
         card.SetPhaseRentCountry(true);
-        //TablePlayersUI.Instance.UpdateInfo();
 
-        CreateUIForRentPrice(1, currentCardInfoIndex);
-        GetAndSetButtonsForPanelInfo(currentCardInfoIndex);
+        ChangesInfoCardServerRpc(currentCardIndex, localId);
 
         Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
     }
-    private void PLayerDemoteCard()
+    private void PlayerDemoteCard()
     {
-        Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
-        Player player = GameController.Instance.GetCurrentPlayer();
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+        PlayerDemoteCardServerRpc(currentCardInfoIndex, localId);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void PlayerDemoteCardServerRpc(int currentCardIndex, ulong localId)
+    {
+        Player player = GameController.Instance.GetCurrentPlayerServerOnly();
+        Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
 
         int priceToDemote = card.GetPriceHotel() / 2;
 
         player.UpgradeOrDemoteCity(-priceToDemote);
         card.SetPhaseRentCountry(false);
-        //TablePlayersUI.Instance.UpdateInfo();
 
-        CreateUIForRentPrice(1, currentCardInfoIndex);
-        GetAndSetButtonsForPanelInfo(currentCardInfoIndex);
+        ChangesInfoCardServerRpc(currentCardIndex, localId);
 
         Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
     }
-    private void PLayerSellCard()
+
+    private void PlayerSellCard()
     {
-        if (currentCardInfoIndex != 0)
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+        PlayerSellCardServerRpc(currentCardInfoIndex, localId);
+    }
+    [ServerRpc(RequireOwnership = false)]
+    private void PlayerSellCardServerRpc(int currentCardIndex, ulong localId)
+    {
+        if (currentCardIndex != 0)
         {
-            Player player = GameController.Instance.GetCurrentPlayer();
-            Card card = boardCardPositions[currentCardInfoIndex].GetComponent<Card>();
+            Player player = GameController.Instance.GetCurrentPlayerServerOnly();
+            Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
 
-            int cardPrice = card.GetPriceCard(currentCardInfoIndex);
+            int cardPrice = card.GetPriceCard(currentCardIndex);
 
-            player.SellCard(cardPrice, currentCardInfoIndex);
+            player.SellCard(cardPrice, currentCardIndex);
 
-            SellCityOrInfrastructureReact(currentCardInfoIndex, player);
-            //TablePlayersUI.Instance.UpdateInfo();
-            SetDefaultColorCardOnBoard();
-            DeleteCardPanelInfo();
+            SellCityOrInfrastructureReact(currentCardIndex, player);
+            SetDefaultColorCardOnBoard(currentCardIndex);
+
+            ChangesInfoCardServerRpc(currentCardIndex, localId);
+
             Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
         }
         else
@@ -752,15 +788,62 @@ public class BoardController : NetworkBehaviour
             Debug.Log("currentCardInfoIndex = 0 or NULL");
         }
     }
+    [ServerRpc(RequireOwnership = false)]
+    public void ChangesInfoCardServerRpc(int index, ulong clientId)
+    {
+        for (int i = 0; i < cardsOpenClients.Length; i++)
+        {
+            if (cardsOpenClients[i] == index)
+            {
+                Debug.Log("ChangesInfoCardServerRpc");
+                ChangesInfoCardClientRpc(cardsOpenClients[i], (ulong)i);
+            }
+        }
+    }
+    [ClientRpc]
+    private void ChangesInfoCardClientRpc(int cardIndex, ulong clientId)
+    {
+        Debug.Log("clientId: " + clientId + " LocalClientId: " + NetworkManager.Singleton.LocalClientId);
+        if (clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            /*if (!CheckPlayerHasEnoughMoneyToUpgrade(cardIndex))//Проверка на наличие денег у игрока на следующую покупку
+            {
+                ShowHideUpgradeButton(false);
+                ShowHideDemoteButton(true);
+            }
+            CreateUIForRentPrice(1, cardIndex);*/
+
+            if (currentCardOpenInfo != null)
+            {
+                DeleteCardInfo(clientId);
+
+                if (currentCardPanelOpenInfo != null)
+                {
+                    DeleteCardPanelInfo();
+                }
+                Debug.Log("Card Updated");
+
+                GetAndSetCardInfoAndPanelInfo(cardIndex, clientId);
+                //GetAndSetButtonsForPanelInfo(cardIndex);
+            }
+        }
+    }
 
     public bool CheckPlayerHasEnoughMoneyToUpgrade(int index)
     {
-        Player player = GameController.Instance.GetCurrentPlayer();
-        Card card = boardCardPositions[index].GetComponent<Card>();
+        int currentPlayerIndex = GameController.Instance.GetCurrentPlayerIndex();
+        int playerMoney = MonopolyMultiplayer.Instance.GetPlayerMoney(currentPlayerIndex);
 
+        Card card = boardCardPositions[index].GetComponent<Card>();
         int priceToUpgrade = card.GetPriceHotel();
-        Debug.Log("player: " + player + " card: " + card + " priceToUpgrade: " + priceToUpgrade);
-        return player.PlayerHasEnoughMoneyToUpgrade(priceToUpgrade);
+
+        if (playerMoney - priceToUpgrade >= 0)
+        {
+            Debug.Log("true");
+            return true;
+        }
+        Debug.Log("false");
+        return false;
     }
 
     public bool FindAllCitisThisCountryAndIfOneHasUpgradeHideSellButtons(int index)

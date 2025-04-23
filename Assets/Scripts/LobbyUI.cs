@@ -1,9 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 
 public class LobbyUI : MonoBehaviour
