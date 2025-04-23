@@ -46,11 +46,6 @@ public class Card : NetworkBehaviour
         return clientOwnerId.Value;
     }
 
-    private void Update()
-    {
-        Debug.Log("Phase:" + PhaseRentCountry);
-    }
-
     public void SetOwnerColorField(UnityEngine.Color color)
     {
         colorOwnerField.material.color = color;

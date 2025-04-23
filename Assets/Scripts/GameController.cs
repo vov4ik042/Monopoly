@@ -10,14 +10,15 @@ public class GameController : NetworkBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Transform objectCanvas;
+    [SerializeField] private Button playerBunkruptButton;
 
     [SerializeField] private Button btnStartTurn;
     [SerializeField] private Button btnEndTurn;
-    [SerializeField] private Button btnWaitingUp;
-    [SerializeField] private Button btnWaitingDown;
+    [SerializeField] private Button btnBuy;
+    [SerializeField] private Button btnEndAndBuy;
 
     public static GameController Instance;
-    private int startMoneyPlayer = 510;//465
+    private int startMoneyPlayer = 110;//465
     public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
@@ -37,11 +38,11 @@ public class GameController : NetworkBehaviour
         btnEndTurn.onClick.AddListener(() => {
             EndTurn();
         });
-        btnWaitingUp.onClick.AddListener(() => {
+        btnBuy.onClick.AddListener(() => {
             btnTurnController(5);
             PlayerBuyCard();
         });
-        btnWaitingDown.onClick.AddListener(() => {
+        btnEndAndBuy.onClick.AddListener(() => {
             EndTurn();
         });
     }
@@ -52,6 +53,13 @@ public class GameController : NetworkBehaviour
         NetworkManager.SceneManager.OnLoadEventCompleted += NetworkManager_OnLoadEventCompleted;
         Instance.AllClientsConnected += GameController_AllClientsConnected;
     }
+    /*private void Start()
+    {
+        playerBunkruptButton.onClick.AddListener(() =>
+        {
+            Bunkrupt.Instance.Show();
+        });
+    }*/
 
     private void btnTurnController(int phase)
     {
@@ -61,42 +69,42 @@ public class GameController : NetworkBehaviour
                 {
                     //DiceController.Instance.SwitchSetActiveDices(true);
                     btnStartTurn.gameObject.SetActive(true);
-                    btnWaitingUp.gameObject.SetActive(false);
-                    btnWaitingUp.interactable = true;//off buy
-                    btnWaitingDown.gameObject.SetActive(false);
+                    btnBuy.gameObject.SetActive(false);
+                    btnBuy.interactable = true;//off buy
+                    btnEndAndBuy.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
             case 2://BuyOrEndTurn
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaitingUp.gameObject.SetActive(true);
-                    btnWaitingDown.gameObject.SetActive(true);
+                    btnBuy.gameObject.SetActive(true);
+                    btnEndAndBuy.gameObject.SetActive(true);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
             case 3://EntTurn
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaitingUp.gameObject.SetActive(false);
-                    btnWaitingDown.gameObject.SetActive(false);
+                    btnBuy.gameObject.SetActive(false);
+                    btnEndAndBuy.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(true);
                     break;
                 }
             case 4://Disable all
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaitingUp.gameObject.SetActive(false);
-                    btnWaitingDown.gameObject.SetActive(false);
+                    btnBuy.gameObject.SetActive(false);
+                    btnEndAndBuy.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
             case 5://Player cant buy
                 {
                     btnStartTurn.gameObject.SetActive(false);
-                    btnWaitingUp.gameObject.SetActive(true);
-                    btnWaitingUp.interactable = false;//off buy
-                    btnWaitingDown.gameObject.SetActive(true);
+                    btnBuy.gameObject.SetActive(true);
+                    btnBuy.interactable = false;//off buy
+                    btnEndAndBuy.gameObject.SetActive(true);
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
@@ -213,7 +221,7 @@ public class GameController : NetworkBehaviour
 
             if (typeButtonTurn == 2)
             {
-                typeButtonTurn = CanPLayerBuyOrNot(sum);
+                typeButtonTurn = CanPlayerBuyOrNot(sum);
             }
 
             UpdateButtonTextClientRpc(sum, typeButtonTurn);
@@ -240,13 +248,14 @@ public class GameController : NetworkBehaviour
     [ClientRpc]
     private void UpdateButtonTextClientRpc(int sum, int typeButtonTurn)
     {
-        if (typeButtonTurn == 2)
-        {
-            TextMeshProUGUI text = btnWaitingUp.GetComponentInChildren<TextMeshProUGUI>();
-            text.text = "Buy\nfor " + sum.ToString() + "$";
-        }
         if (IsMyTurn())
         {
+            if (typeButtonTurn != 3)
+            {
+                TextMeshProUGUI text = btnBuy.GetComponentInChildren<TextMeshProUGUI>();
+                text.text = $"Buy\nfor {sum}$";
+                Debug.Log("text:" + text.text);
+            }
             btnTurnController(typeButtonTurn);
         }
     }
@@ -276,7 +285,7 @@ public class GameController : NetworkBehaviour
     {
         playersList[currentPlayerIndex.Value].AuctionCard();
     }
-    private int CanPLayerBuyOrNot(int sum)//Проверка на плетежеспособность игрока, и отключение кнопки купить
+    private int CanPlayerBuyOrNot(int sum)//Проверка на плетежеспособность игрока, и отключение кнопки купить
     {
         if (playersList[currentPlayerIndex.Value].GetPlayerMoney() - sum >= 0)
         {
@@ -426,11 +435,11 @@ public class GameController : NetworkBehaviour
         btnEndTurn.onClick.RemoveListener(() => {
             EndTurn();
         });
-        btnWaitingUp.onClick.RemoveListener(() => {
+        btnBuy.onClick.RemoveListener(() => {
             btnTurnController(5);
             PlayerBuyCard();
         });
-        btnWaitingDown.onClick.RemoveListener(() => {
+        btnEndAndBuy.onClick.RemoveListener(() => {
             EndTurn();
         });
     }

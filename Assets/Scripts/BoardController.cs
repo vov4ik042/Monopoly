@@ -806,13 +806,6 @@ public class BoardController : NetworkBehaviour
         Debug.Log("clientId: " + clientId + " LocalClientId: " + NetworkManager.Singleton.LocalClientId);
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            /*if (!CheckPlayerHasEnoughMoneyToUpgrade(cardIndex))//Проверка на наличие денег у игрока на следующую покупку
-            {
-                ShowHideUpgradeButton(false);
-                ShowHideDemoteButton(true);
-            }
-            CreateUIForRentPrice(1, cardIndex);*/
-
             if (currentCardOpenInfo != null)
             {
                 DeleteCardInfo(clientId);
@@ -824,7 +817,6 @@ public class BoardController : NetworkBehaviour
                 Debug.Log("Card Updated");
 
                 GetAndSetCardInfoAndPanelInfo(cardIndex, clientId);
-                //GetAndSetButtonsForPanelInfo(cardIndex);
             }
         }
     }

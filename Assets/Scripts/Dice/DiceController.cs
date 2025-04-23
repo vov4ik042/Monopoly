@@ -19,19 +19,6 @@ public class DiceController : NetworkBehaviour
     private int lastScreenWidth;
     private int lastScreenHeight;
 
-    public int _sumResult;
-    private int sumResult 
-    {
-        get
-        {
-            return _sumResult;
-        }
-        set
-        {
-            _sumResult = value;
-        }
-    }
-
     private void RememberCubePosition()
     {
         baseScale = cube1.transform.localScale; // Запоминаем базовый размер
@@ -75,8 +62,8 @@ public class DiceController : NetworkBehaviour
 
     public void CreateCubesUI()
     {
-        Vector3 position1 = new Vector3(-9.10f, 19.69f, -15.71f);
-        Vector3 position2 = new Vector3(-7.90f, 19.69f, -15.71f);
+        Vector3 position1 = new Vector3(-9.24f, 19.58f, -15.62f);
+        Vector3 position2 = new Vector3(-7.956f, 19.58f, -15.62f);
         Quaternion rotation = Quaternion.Euler(-75, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);
