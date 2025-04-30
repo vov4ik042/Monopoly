@@ -18,12 +18,14 @@ public class CharacterSelectUI : MonoBehaviour
     {
         mainMenuButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.LeaveLobby();
             NetworkManager.Singleton.Shutdown();
             SceneManager.PlayScene(Scenes.Menu);
         });
         readyButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             CharacterSelectReady.Instance.SetPlayerReady();
         });
     }

@@ -20,19 +20,22 @@ public class LobbyUI : MonoBehaviour
     {
         CreateLobbyButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             CreateLobbyUI.gameObject.SetActive(true);
         });
         QuickJoinButton.onClick.AddListener(() =>
         {
-            //MonopolyMultiplayer.Instance.StartClient();
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.QuickJoin();
         });
         JoinCodeButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.JoinWithCode(lobbyCodeInput.text);
         });
         MainMenuButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.LeaveLobby();
             SceneManager.PlayScene(Scenes.Menu);
         });

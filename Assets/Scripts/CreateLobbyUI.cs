@@ -13,17 +13,23 @@ public class CreateLobbyUI : MonoBehaviour
     {
         buttonPublic.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.CreateLobby(lobbyNameInput.text, false);
         });
         buttonPrivate.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.CreateLobby(lobbyNameInput.text, true);
         });
-        buttonExit.onClick.AddListener(CloseWindow);
+        buttonExit.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX(1);
+            CloseWindow();
+        });
     }
 
     private void CloseWindow()
     {
-        this.gameObject.SetActive(false);
+        gameObject.SetActive(false);
     }
 }

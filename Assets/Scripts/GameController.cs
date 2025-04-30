@@ -24,9 +24,6 @@ public class GameController : NetworkBehaviour
 
     private List<Player> playersList = new List<Player>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
-
-    private Player cachedCurrentPlayer; // Кэш для клиента
-
     public event EventHandler AllClientsConnected;
 
     private void OnEnable()
@@ -425,7 +422,11 @@ public class GameController : NetworkBehaviour
         }
         return result;
     }
-
+    [ServerRpc(RequireOwnership = false)]
+    public void RemovePlayerFromListServerRpc(ulong clientId)
+    {
+        playersList.RemoveAt((int)clientId);
+    }
     private void OnDisable()
     {
         btnStartTurn.onClick.RemoveListener(() => {

@@ -11,7 +11,8 @@ public class CharacterColorSelectUI : MonoBehaviour
 
     private void Awake()
     {
-        GetComponent<Button>().onClick.AddListener(() => { 
+        GetComponent<Button>().onClick.AddListener(() => {
+            AudioManager.Instance.PlaySFX(3);
             MonopolyMultiplayer.Instance.ChangePlayerColor(colorId);
         });
     }

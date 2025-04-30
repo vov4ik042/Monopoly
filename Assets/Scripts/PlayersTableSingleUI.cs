@@ -13,6 +13,14 @@ public class PlayersTableSingleUI : MonoBehaviour
         PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(playerIndex);
         PlayerColorImage.color = MonopolyMultiplayer.Instance.GetPlayerColor(playerData.colorId);
         PlayerNameText.text = playerData.playerName.ToString();
-        PlayerMoneyText.text = MonopolyMultiplayer.Instance.GetPlayerMoney(playerIndex).ToString() + "$";
+
+        if (MonopolyMultiplayer.Instance.GetPlayerBankrupt(playerIndex))
+        {
+            PlayerMoneyText.text = "Bankrupt";
+        }
+        else
+        {
+            PlayerMoneyText.text = MonopolyMultiplayer.Instance.GetPlayerMoney(playerIndex).ToString() + "$";
+        }
     }
 }

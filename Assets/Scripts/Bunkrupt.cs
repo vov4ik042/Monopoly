@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Netcode;
 
 public class Bunkrupt : MonoBehaviour
 {
@@ -12,11 +13,16 @@ public class Bunkrupt : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        Hide();
     }
     private void Start()
     {
         buttonYes.onClick.AddListener(() =>
         {
+            MonopolyMultiplayer.Instance.RemovePlayerFromListServerRpc(NetworkManager.Singleton.LocalClientId);
+            GameController.Instance.RemovePlayerFromListServerRpc(NetworkManager.Singleton.LocalClientId);
+            TablePlayersUI.Instance.ChangeCountListTableUIPlayersServerRpc(NetworkManager.Singleton.LocalClientId);
+            //MonopolyMultiplayer.Instance.KickPlayerServerRpc(NetworkManager.Singleton.LocalClientId);
             //GameOver.Instance.Show();
             Hide();
         });

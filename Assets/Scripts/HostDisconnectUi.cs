@@ -13,6 +13,7 @@ public class HostDisconnectUi : NetworkBehaviour
     {
         playAgainButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             SceneManager.PlayScene(Scenes.Menu);
         });
     }

@@ -10,7 +10,11 @@ public class LobbyMessageUi : MonoBehaviour
 
     private void Awake()
     {
-        closeButton.onClick.AddListener(Hide);
+        closeButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX(1);
+            Hide();
+        });
     }
 
     private void Start()

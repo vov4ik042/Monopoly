@@ -15,9 +15,10 @@ public class CharacterSelectPlayer : MonoBehaviour
     {
         kickPlayerButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(2);
             PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(player_index);
             MonopolyLobby.Instance.KickPlayer(playerData.playerId.ToString());
-            MonopolyMultiplayer.Instance.KickPlayer(playerData.clientId);
+            MonopolyMultiplayer.Instance.KickPlayerServerRpc(playerData.clientId);
         });
     }
 

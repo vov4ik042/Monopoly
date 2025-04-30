@@ -13,6 +13,7 @@ public class LobbyListSingleUI : MonoBehaviour
     {
         GetComponent<Button>().onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlaySFX(1);
             MonopolyLobby.Instance.JoinWithId(lobby.Id);
         });
     }

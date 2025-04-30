@@ -149,7 +149,21 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
     public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
     {
+        Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count);
         return playerDataNetworkList[playerIndex];
+    }
+    public bool GetPlayerDataNetworkListNotNull()
+    {
+        return playerDataNetworkList.Count > 0;
+    }
+    public void SetPlayerBankrupt(ulong clientId)
+    {
+        PlayerData player = GetPlayerDataFromClientId(clientId);
+        player.playerBankrupt = true;
+    }
+    public bool GetPlayerBankrupt(int playerIndex)
+    {
+        return playerDataNetworkList[playerIndex].playerBankrupt;
     }
     public ulong GetClientIdFromPlayerIndex(int playerIndex)
     {
@@ -261,8 +275,14 @@ public class MonopolyMultiplayer : NetworkBehaviour
         }
         return -1;
     }
+    [ServerRpc(RequireOwnership = false)]
+    public void RemovePlayerFromListServerRpc(ulong clientId)
+    {
+        NetworkManager_Server_OnClientDisconnectCallback(clientId);
+    }
 
-    public void KickPlayer(ulong clientId)
+    [ServerRpc(RequireOwnership = false)]
+    public void KickPlayerServerRpc(ulong clientId)
     {
         NetworkManager.Singleton.DisconnectClient(clientId);
         NetworkManager_Server_OnClientDisconnectCallback(clientId);
