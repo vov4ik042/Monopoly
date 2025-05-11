@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -27,15 +28,8 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + UnityEngine.Random.Range(100,1000));
         playerDataNetworkList = new NetworkList<PlayerData>();
         playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
+    }
 
-    }
-    public void ViewListClientsId()
-    {
-        for (int i = 0; i < playerDataNetworkList.Count; i++)
-        {
-            Debug.Log("ClientIdList: " + playerDataNetworkList[i].clientId + " " + playerDataNetworkList[i].playerName);
-        }
-    }
     public string GetPlayerName()
     {
         return playerName;
@@ -92,7 +86,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerDataNetworkList[playerDataIndex] = playerData;
     }
 
-    private void NetworkManager_Server_OnClientDisconnectCallback(ulong clientId)//Убираем игрока из лобби когда он вышел
+    private void NetworkManager_Server_OnClientDisconnectCallback(ulong clientId)
     {
         for (int i = 0; i < playerDataNetworkList.Count; i++)
         {
@@ -149,7 +143,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
     public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
     {
-        Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count);
+        //Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count);
         return playerDataNetworkList[playerIndex];
     }
     public bool GetPlayerDataNetworkListNotNull()

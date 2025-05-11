@@ -13,7 +13,6 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
     public int playerMoney;
     public bool playerBankrupt;
 
-
     public bool Equals(PlayerData other)
     {
         return

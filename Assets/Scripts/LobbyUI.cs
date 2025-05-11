@@ -36,7 +36,6 @@ public class LobbyUI : MonoBehaviour
         MainMenuButton.onClick.AddListener(() =>
         {
             AudioManager.Instance.PlaySFX(1);
-            MonopolyLobby.Instance.LeaveLobby();
             SceneManager.PlayScene(Scenes.Menu);
         });
 
@@ -63,13 +62,13 @@ public class LobbyUI : MonoBehaviour
 
     private void UpdateLobbyList(List<Lobby> lobbyList)
     {
-        foreach(Transform child in LobbyContainer)
+        foreach (Transform child in LobbyContainer)
         {
             if (child == LobbyTemplate) continue;
             Destroy(child.gameObject);
         }
 
-        foreach(Lobby lobby in lobbyList)
+        foreach (Lobby lobby in lobbyList)
         {
             Transform lobbyTransform = Instantiate(LobbyTemplate, LobbyContainer);
             lobbyTransform.gameObject.SetActive(true);

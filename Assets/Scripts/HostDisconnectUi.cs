@@ -8,9 +8,11 @@ using UnityEngine.UI;
 public class HostDisconnectUi : NetworkBehaviour
 {
     [SerializeField] private Button playAgainButton;
+    public static HostDisconnectUi Instance;
 
     private void Awake()
     {
+        Instance = this;
         playAgainButton.onClick.AddListener(() =>
         {
             AudioManager.Instance.PlaySFX(1);
@@ -37,13 +39,13 @@ public class HostDisconnectUi : NetworkBehaviour
                 if (clientId == NetworkManager.Singleton.LocalClientId)
                 {
                     Show();
-                }
+               }
             }
         }
     }
 
     [ClientRpc(RequireOwnership = false)]
-    private void ShowForAllPlayersClientRpc()
+    public void ShowForAllPlayersClientRpc()
     {
         Show();
     }

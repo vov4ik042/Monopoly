@@ -1,5 +1,6 @@
 using TMPro;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,10 @@ public class CharacterSelectPlayer : MonoBehaviour
         {
             AudioManager.Instance.PlaySFX(2);
             PlayerData playerData = MonopolyMultiplayer.Instance.GetPlayerDataFromPlayerIndex(player_index);
+            if (player_index == 0)//Server = 0
+            {
+                HostDisconnectUi.Instance.ShowForAllPlayersClientRpc();
+            }
             MonopolyLobby.Instance.KickPlayer(playerData.playerId.ToString());
             MonopolyMultiplayer.Instance.KickPlayerServerRpc(playerData.clientId);
         });

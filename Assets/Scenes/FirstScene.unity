@@ -154,6 +154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MusicSource: {fileID: 2050876903}
   SFXSource: {fileID: 799192302}
+  audioMixer: {fileID: 24100000, guid: 8f501f12e86b63d4aa01ef8837e821fd, type: 2}
   listClips:
   - {fileID: 8300000, guid: e0792bc3f66f0a64d9b6e8eaee2d1d6c, type: 3}
   - {fileID: 8300000, guid: 957562b542eef874784492131846378a, type: 3}
@@ -362,7 +363,7 @@ GameObject:
   - component: {fileID: 1134436838}
   - component: {fileID: 1134436837}
   m_Layer: 0
-  m_Name: Image
+  m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

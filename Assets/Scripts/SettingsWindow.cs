@@ -92,6 +92,7 @@ public class SettingsWindow : MonoBehaviour
 
     public void ChangeResolution()
     {
+        AudioManager.Instance.PlaySFX(1);
         SelectedResolution = resolutionDropDown.value;
         Screen.SetResolution(SelectedResolutionList[SelectedResolution].width, SelectedResolutionList[SelectedResolution].height, false);
     }
