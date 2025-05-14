@@ -6,6 +6,7 @@ using UnityEngine;
 public class DiceRoll : NetworkBehaviour
 {
     [SerializeField] private Transform[] edges;
+
     private Rigidbody rb;
     private GameObject dicePlate;
     private int _result = new int();
@@ -14,7 +15,6 @@ public class DiceRoll : NetworkBehaviour
     {
         return _result;
     }
-
     public void SetResult(int newResult)
     {
         _result = newResult;

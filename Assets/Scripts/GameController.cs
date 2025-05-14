@@ -18,13 +18,14 @@ public class GameController : NetworkBehaviour
     [SerializeField] private Button btnEndAndBuy;
 
     public static GameController Instance;
-    private int startMoneyPlayer = 110;//465
+    private int startMoneyPlayer = 1500;//465
     public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
     private List<Player> playersList = new List<Player>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
     public event EventHandler AllClientsConnected;
+    public event EventHandler<int> AddPropertyListLocalClient;
 
     private void OnEnable()
     {
@@ -260,14 +261,15 @@ public class GameController : NetworkBehaviour
     public void PlayerBuyCard()
     {
         ulong localId = NetworkManager.Singleton.LocalClientId;
-        //Debug.Log("PlayerBuyCard client id: " + localId);
-        PlayerBuyCardServerRpc(localId);
+        int cardIndex = BoardController.Instance.WhatCardNumber();
+        AddPropertyListLocalClient?.Invoke(this, cardIndex);
+
+        PlayerBuyCardServerRpc(localId, cardIndex);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void PlayerBuyCardServerRpc(ulong clientId)
+    private void PlayerBuyCardServerRpc(ulong clientId, int cardIndex)
     {
-        int cardIndex = BoardController.Instance.WhatCardNumber();
         int cardCost = BoardController.Instance.SumCardCost();
 
         playersList[currentPlayerIndex.Value].BuyCard(cardIndex, cardCost, playersList[currentPlayerIndex.Value], clientId);

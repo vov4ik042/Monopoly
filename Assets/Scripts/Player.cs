@@ -86,7 +86,7 @@ public class Player : NetworkBehaviour
 
     public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)//ServerRpc
     {
-        Card card = BoardController.Instance.ReturnCardObject(cardIndex);
+        Card card = BoardController.Instance.GetCardObject(cardIndex);
         SetPlayerMoney(-cardCost);
         card.SetPlayerOwner(player);
         card.SetClientOwnerId(clientId);
@@ -94,7 +94,7 @@ public class Player : NetworkBehaviour
     }
     public void SellCard(int cardPrice, int index)
     {
-        Card card = BoardController.Instance.ReturnCardObject(index);
+        Card card = BoardController.Instance.GetCardObject(index);
         SetPlayerMoney(cardPrice / 2);//При продаже возвращается только 50% от стоимости клетки
         card.SetPlayerOwner(null);
         card.SetClientOwnerId(0);

@@ -24,7 +24,7 @@ public class BoardController : NetworkBehaviour
     static public BoardController Instance;
     private GameObject currentCardOpenInfo { get; set; }//Для удаления обьектов cardINfo
     private GameObject currentCardPanelOpenInfo { get; set; }//Для удаления панели для  cardINfo
-    private int currentPlayerPosition;//Для понимая с какой картой работать
+    private NetworkVariable<int> currentPlayerPosition = new NetworkVariable<int>();//Для понимая с какой картой работать
     private int currentCardInfoIndex { get; set; }//Для работы кнопок на панели
     private UnityEngine.UI.Button[] ButtonsPanelCardInfo;//Кнопки панели
 
@@ -43,6 +43,7 @@ public class BoardController : NetworkBehaviour
         { "Netherlands", 2 }// У Нидерландов свой лимит
     };
 
+    public event EventHandler<int> DeletePropertyListLocalClient;
     private void Awake()
     {
         Instance = this;
@@ -73,7 +74,7 @@ public class BoardController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SetValueListCardsInfoServerRpc(int value, ulong clientId)
     {
-        Debug.Log("SetValue card:" + value);
+        //Debug.Log("SetValue card:" + value);
         cardsOpenClients[clientId] = value;
     }
     private void GetButtonsFromPanelAndAddListener(GameObject PanelCardInfo)
@@ -284,6 +285,33 @@ public class BoardController : NetworkBehaviour
                 }
             }
             CreateCardInfoUI(index);
+        }
+    }
+
+    public void VerifyAndCreateCardInfoAndPanel(int number, ulong localId)
+    {
+        Card cardCountry = GetCardObject(number);
+
+        if (cardCountry != null)
+        {
+            if (currentCardOpenInfo != null)
+            {
+                DeleteCardInfo(localId);
+            }
+
+            if (currentCardPanelOpenInfo != null)
+            {
+                DeleteCardPanelInfo();
+            }
+
+            int index = cardCountry.GetCardIndex();
+
+            GetAndSetCardInfoAndPanelInfo(index, localId);
+        }
+        else//If not cardObject
+        {
+            DeleteCardInfo(localId);
+            DeleteCardPanelInfo();
         }
     }
 
@@ -522,12 +550,12 @@ public class BoardController : NetworkBehaviour
 
     public void CurrentPlayerPosition(int field)
     {
-        currentPlayerPosition = field;
+        currentPlayerPosition.Value = field;
     }
 
     public int CheckCardBoughtOrNot(Player player)//ServerRpc
     {
-        Card cardCountry = boardCardPositions[currentPlayerPosition].GetComponent<Card>();
+        Card cardCountry = boardCardPositions[currentPlayerPosition.Value].GetComponent<Card>();
 
         if (cardCountry.GetPlayerOwner() == null)
         {
@@ -619,8 +647,8 @@ public class BoardController : NetworkBehaviour
         return null;
     }
 
-    public int ReturnPLayerPosition() => currentPlayerPosition;
-    public Card ReturnCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
+    public int ReturnPLayerPosition() => currentPlayerPosition.Value;
+    public Card GetCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;
     public bool GetPanelForCardInfoIsCreated()
@@ -629,14 +657,28 @@ public class BoardController : NetworkBehaviour
             return true;
         return false;
     }
-    public int WhatCardNumber() => currentPlayerPosition;
-    public int SumCardCost() => boardCardPositions[currentPlayerPosition].GetComponent<Card>().GetPriceCard(currentPlayerPosition);//Infrastructure
+    public int WhatCardNumber() => currentPlayerPosition.Value;
+    public int SumCardCost() => boardCardPositions[currentPlayerPosition.Value].GetComponent<Card>().GetPriceCard(currentPlayerPosition.Value);//Infrastructure
     public int SumCardCostForOpenInfo() => boardCardPositions[currentCardInfoIndex].GetComponent<Card>().GetPriceCard(currentCardInfoIndex);//Infrastructure
-
+    public string GetCardCityName(int number)
+    {
+        if (number != 8 && number != 13 && number != 28 && number != 33 && number != 36)
+        {
+            return boardCardPositions[number].GetComponent<Card>().GetCityName();
+        }
+        else
+        {
+            return boardCardPositions[number].GetComponent<Card>().GetInfrastructureName();
+        }
+    }
+    public int GetCardCost(int number)
+    {
+        return boardCardPositions[number].GetComponent<Card>().GetPriceCard(number);
+    }
     public void UpdateColorCardOnBoard(int playerIndex)
     {
         UnityEngine.Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
-        boardCardPositions[currentPlayerPosition].GetComponent<Card>().SetOwnerColorField(color);
+        boardCardPositions[currentPlayerPosition.Value].GetComponent<Card>().SetOwnerColorField(color);
     }
 
     public void SetDefaultColorCardOnBoard(int playerIndex)
@@ -763,6 +805,7 @@ public class BoardController : NetworkBehaviour
     private void PlayerSellCard()
     {
         ulong localId = NetworkManager.Singleton.LocalClientId;
+        DeletePropertyListLocalClient?.Invoke(this, currentCardInfoIndex);
         PlayerSellCardServerRpc(currentCardInfoIndex, localId);
     }
     [ServerRpc(RequireOwnership = false)]

@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class DiceController : NetworkBehaviour
 {
@@ -10,60 +11,65 @@ public class DiceController : NetworkBehaviour
     [SerializeField] private GameObject dicePlate1;
     [SerializeField] private GameObject dicePlate2;
     [SerializeField] private GameObject diceParent;
-    [SerializeField] private Camera cam;
+    [SerializeField] private Camera mainCamera;
 
     private GameObject cube1;
     private GameObject cube2;
 
-    private Vector3 baseScale; // Исходный размер кубов
-    private int lastScreenWidth;
-    private int lastScreenHeight;
-
-    private void RememberCubePosition()
-    {
-        baseScale = cube1.transform.localScale; // Запоминаем базовый размер
-        lastScreenWidth = Screen.width;
-        lastScreenHeight = Screen.height;
-    }
-
-    private void Update()
-    {
-        if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
-        {
-            lastScreenWidth = Screen.width;
-            lastScreenHeight = Screen.height;
-            UpdateCubes();
-        }
-    }
-
-    private void UpdateCubes()
-    {
-        if (cam == null || cube1 == null || cube2 == null) return;
-
-        // Получаем верхний левый угол в мировых координатах
-        Vector3 topLeft = cam.ScreenToWorldPoint(new Vector3(0, Screen.height, cam.nearClipPlane + 5));
-
-        // Устанавливаем кубы относительно верхнего левого угла с фиксированным отступом
-        float offsetX = 1.0f; // Отступ от левого края
-        float offsetY = -1.0f; // Отступ от верхнего края
-        cube1.transform.position = topLeft + new Vector3(offsetX, offsetY, 0);
-        cube2.transform.position = topLeft + new Vector3(offsetX + 1.0f, offsetY - 1.0f, 0); // Чуть ниже второго
-
-        // Масштабирование кубов относительно ширины экрана
-        float scaleFactor = Mathf.Clamp(Screen.width / 1920f, 0.5f, 1f);
-        cube1.transform.localScale = baseScale * scaleFactor;
-        cube2.transform.localScale = baseScale * scaleFactor;
-    }
-
+    public float xOff = 0.063f;
+    public float xOff1 = 0.122f;
+    public float yOff = 0.84f;
+    public float distanceFromCamera = 10f; // глубина в мире
     private void Awake()
     {
         Instance = this;
     }
+    private Vector2 lastScreenSize;
+
+    private void Start()
+    {
+        lastScreenSize = new Vector2(Screen.width, Screen.height);
+        UpdatePos();
+    }
+
+    private void Update()
+    {
+        if (Screen.width != lastScreenSize.x || Screen.height != lastScreenSize.y)
+        {
+            lastScreenSize = new Vector2(Screen.width, Screen.height);
+            UpdatePos();
+        }
+    }
+
+    private void UpdatePos()
+    {
+        Vector3 pos1 = mainCamera.ViewportToWorldPoint(new Vector3(xOff, yOff, distanceFromCamera));
+        Vector3 pos2 = mainCamera.ViewportToWorldPoint(new Vector3(xOff1, yOff, distanceFromCamera));
+
+        pos1.z = cube1.transform.position.z;
+        pos2.z = cube2.transform.position.z;
+
+        cube1.transform.position = pos1;
+        cube2.transform.position = pos2;
+
+        Debug.Log("cameraRightMiddle1:" + pos1);
+        Debug.Log("cameraRightMiddle2:" + pos2);
+
+        /*Vector3 viewportPos = mainCamera.WorldToViewportPoint(cube2.transform.position);
+
+        float distanceToLeft = viewportPos.x;           // от 0 до 1
+        float distanceToTop = 1f - viewportPos.y;       // от 0 до 1
+
+        Debug.Log("До левого края: " + distanceToLeft);
+        Debug.Log("До верхнего края: " + distanceToTop);*/
+    }
 
     public void CreateCubesUI()
     {
-        Vector3 position1 = new Vector3(-9.24f, 19.58f, -15.62f);
-        Vector3 position2 = new Vector3(-7.956f, 19.58f, -15.62f);
+        Vector3 position1 = new Vector3(-8.9f, 19.45f, -15.62f);
+        //Vector3 position1 = new Vector3(-9.24f, 19.58f, -15.62f);
+        Vector3 position2 = new Vector3(-7.8f, 19.45f, -15.62f);
+        //Vector3 position2 = new Vector3(-7.956f, 19.58f, -15.62f);
         Quaternion rotation = Quaternion.Euler(-75, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);
@@ -76,7 +82,19 @@ public class DiceController : NetworkBehaviour
         NetworkObject cube2NetworkObject = cube2.GetComponent<NetworkObject>();
         cube2NetworkObject.Spawn();
 
-        RememberCubePosition();
+        WriteCubesClientRpc(new NetworkObjectReference(cube1), new NetworkObjectReference(cube2));
+    }
+    [ClientRpc]
+    private void WriteCubesClientRpc(NetworkObjectReference networkObjectReference1, NetworkObjectReference networkObjectReference2)
+    {
+        if (networkObjectReference1.TryGet(out NetworkObject Netcube1))
+        {
+            cube1 = Netcube1.gameObject;
+        }
+        if (networkObjectReference2.TryGet(out NetworkObject Netcube2))
+        {
+            cube2 = Netcube2.gameObject;
+        }
     }
 
     public void WriteResultCubes()
@@ -136,6 +154,6 @@ public class DiceController : NetworkBehaviour
             yield return null; // Ждем, пока кубик не замедлится
         }
 
-        diceRoll.SnapToClosestFace(cam.transform.rotation.eulerAngles.x);
+        diceRoll.SnapToClosestFace(mainCamera.transform.rotation.eulerAngles.x);
     }
 }
