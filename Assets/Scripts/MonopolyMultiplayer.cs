@@ -143,17 +143,23 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
     public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
     {
-        //Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count);
+        Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count + " playerIndex: " + playerIndex);
         return playerDataNetworkList[playerIndex];
     }
     public bool GetPlayerDataNetworkListNotNull()
     {
         return playerDataNetworkList.Count > 0;
     }
-    public void SetPlayerBankrupt(ulong clientId)
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerBankruptServerRpc(ulong clientId)
     {
-        PlayerData player = GetPlayerDataFromClientId(clientId);
-        player.playerBankrupt = true;
+        int playerDataIndex = GetPlayerDataIndexFromClientId(clientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        playerData.playerBankrupt = true;
+
+        playerDataNetworkList[playerDataIndex] = playerData;
     }
     public bool GetPlayerBankrupt(int playerIndex)
     {
@@ -179,7 +185,10 @@ public class MonopolyMultiplayer : NetworkBehaviour
     {
         return playerDataNetworkList[playerIndex].playerMoney;
     }
-
+    public FixedString64Bytes GetPlayerNameFromPlayerData(int playerIndex)
+    {
+        return playerDataNetworkList[playerIndex].playerName;
+    }
     public PlayerData GetPlayerDataFromClientId(ulong clientId)
     {
         foreach(var playerData in playerDataNetworkList)
@@ -280,5 +289,14 @@ public class MonopolyMultiplayer : NetworkBehaviour
     {
         NetworkManager.Singleton.DisconnectClient(clientId);
         NetworkManager_Server_OnClientDisconnectCallback(clientId);
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void DeleteInstanceServerRpc()
+    {
+        if (Instance != null)
+        {
+            Destroy(Instance.gameObject);
+            Instance = null;
+        }
     }
 }

@@ -16,7 +16,17 @@ public class CharacterSelectReady : NetworkBehaviour
 
     public void SetPlayerReady()
     {
-        SetPlayerReadyServerRpc();
+        if (IsHost)
+        {
+            if (NetworkManager.Singleton.ConnectedClientsList.Count > 1)
+            {
+                SetPlayerReadyServerRpc();
+            }
+        }
+        else 
+        {
+            SetPlayerReadyServerRpc();
+        }
     }
 
     [ServerRpc(RequireOwnership = false)]

@@ -18,24 +18,6 @@ public class TablePlayersUI : MonoBehaviour
         MonopolyMultiplayer.Instance.OnPlayerDataNetworkListChanged += MonopolyMultiplayer_OnPlayerDataNetworkListChanged;
         Template.gameObject.SetActive(false);
     }
-    [ServerRpc(RequireOwnership = false)]
-    public void ChangeCountListTableUIPlayersServerRpc(ulong clientId)
-    {
-        ChangeCountListTableUIPlayersClientRpc(clientId);
-    }
-    [ClientRpc]
-    public void ChangeCountListTableUIPlayersClientRpc(ulong clientId)
-    {
-        TemplatesList.RemoveAt((int)clientId);
-
-        foreach (Transform child in Container)
-        {
-            if (child == Template) continue;
-            Destroy(child.gameObject);
-        }
-
-        PutPlayersOnTableUI(TemplatesList.Count);
-    }
 
     private void MonopolyMultiplayer_OnPlayerDataNetworkListChanged(object sender, System.EventArgs e)
     {

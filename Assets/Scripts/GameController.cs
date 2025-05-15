@@ -1,6 +1,6 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,17 +11,18 @@ public class GameController : NetworkBehaviour
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Transform objectCanvas;
     [SerializeField] private Button playerBunkruptButton;
-
     [SerializeField] private Button btnStartTurn;
     [SerializeField] private Button btnEndTurn;
     [SerializeField] private Button btnBuy;
     [SerializeField] private Button btnEndAndBuy;
 
     public static GameController Instance;
+
     private int startMoneyPlayer = 1500;//465
     public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
+    private bool[] playersBunkrupt;
     private List<Player> playersList = new List<Player>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
     public event EventHandler AllClientsConnected;
@@ -116,12 +117,51 @@ public class GameController : NetworkBehaviour
             DiceController.Instance.CreateCubesUI();
             CreateTablePlayerInfoServerRpc();
             StartGameServerRpc();
+            InitializePlayersBunkruptList();
         }
         if (IsClient)
         {
             BoardController.Instance.PutPriceAndNameOnCardsUI();//Инизиализация поля с текстом Карт(стоимость карты)
         }
     }
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerBunkruptServerRpc(ulong clientId)
+    {
+        playersBunkrupt[clientId] = true;
+
+        int playerIndex = -1;
+        byte count = 0;
+
+        for (int i = 0; i < playersBunkrupt.Length; i++)
+        {
+            if (playersBunkrupt[i] == false)
+            {
+                count++;
+                playerIndex = i;
+            }
+        }
+
+        if (count == 1)
+        {
+            string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerData(playerIndex).ToString();
+            SetPlayerBunkruptClientRpc(playerName);
+        }
+    }
+    [ClientRpc]
+    private void SetPlayerBunkruptClientRpc(string name)
+    {
+        ResultWindow.Instance.Show(name);
+    }
+
+    private void InitializePlayersBunkruptList()
+    {
+        playersBunkrupt = new bool[PlayersConnectedCountServer];
+        for (int i = 0; i < playersBunkrupt.Length; i++)
+        {
+            playersBunkrupt[i] = false;
+        }
+    }
+
     [ServerRpc(RequireOwnership = false)]
     private void CreateTablePlayerInfoServerRpc()
     {
@@ -171,6 +211,7 @@ public class GameController : NetworkBehaviour
         //steps = value;
         Debug.Log("Игроку " + player + " выпало " + steps);
     }
+
 
     public int GetCurrentPlayerIndex()
     {
@@ -428,6 +469,7 @@ public class GameController : NetworkBehaviour
     public void RemovePlayerFromListServerRpc(ulong clientId)
     {
         playersList.RemoveAt((int)clientId);
+        Debug.Log("PlayerslistCount: " + playersList.Count);
     }
     private void OnDisable()
     {
@@ -445,6 +487,29 @@ public class GameController : NetworkBehaviour
         btnEndAndBuy.onClick.RemoveListener(() => {
             EndTurn();
         });
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void DeleteInstanceServerRpc()
+    {
+        if (Instance != null)
+        {
+            Destroy(Instance.gameObject);
+            Instance = null;
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RemoveAllPlayerObjectsServerRpc()
+    {
+        foreach (var client in NetworkManager.Singleton.ConnectedClients)
+        {
+            GameObject playerObj = client.Value.PlayerObject?.gameObject;
+            if (playerObj != null)
+            {
+                playerObj.GetComponent<NetworkObject>().Despawn();
+            }
+        }
     }
     public override void OnNetworkDespawn()
     {

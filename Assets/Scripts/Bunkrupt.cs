@@ -19,11 +19,14 @@ public class Bunkrupt : MonoBehaviour
     {
         buttonYes.onClick.AddListener(() =>
         {
-            MonopolyMultiplayer.Instance.RemovePlayerFromListServerRpc(NetworkManager.Singleton.LocalClientId);
-            GameController.Instance.RemovePlayerFromListServerRpc(NetworkManager.Singleton.LocalClientId);
-            TablePlayersUI.Instance.ChangeCountListTableUIPlayersServerRpc(NetworkManager.Singleton.LocalClientId);
-            //MonopolyMultiplayer.Instance.KickPlayerServerRpc(NetworkManager.Singleton.LocalClientId);
-            //GameOver.Instance.Show();
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+
+            GameController.Instance.RemoveAllPlayerObjectsServerRpc();
+            GameController.Instance.RemovePlayerFromListServerRpc(clientId);
+            MonopolyMultiplayer.Instance.SetPlayerBankruptServerRpc(clientId);
+            GameController.Instance.SetPlayerBunkruptServerRpc(clientId);
+            TablePlayersUI.Instance.UpdateInfo();
+
             Hide();
         });
         buttonNo.onClick.AddListener(() =>

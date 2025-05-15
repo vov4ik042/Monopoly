@@ -66,10 +66,19 @@ public class LobbyUI : MonoBehaviour
         {
             if (child == LobbyTemplate) continue;
             Destroy(child.gameObject);
+            RectTransform rectTransform = LobbyContainer.GetComponent<RectTransform>();
+            Vector2 size = rectTransform.sizeDelta;
+            size.y -= 48.0f;
+            rectTransform.sizeDelta = size;
         }
 
         foreach (Lobby lobby in lobbyList)
         {
+            RectTransform rectTransform = LobbyContainer.GetComponent<RectTransform>();
+            Vector2 size = rectTransform.sizeDelta;
+            size.y += 48.0f;
+            rectTransform.sizeDelta = size;
+
             Transform lobbyTransform = Instantiate(LobbyTemplate, LobbyContainer);
             lobbyTransform.gameObject.SetActive(true);
             lobbyTransform.GetComponent<LobbyListSingleUI>().SetLobby(lobby);

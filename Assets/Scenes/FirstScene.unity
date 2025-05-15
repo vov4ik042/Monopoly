@@ -159,7 +159,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: e0792bc3f66f0a64d9b6e8eaee2d1d6c, type: 3}
   - {fileID: 8300000, guid: 957562b542eef874784492131846378a, type: 3}
   - {fileID: 8300000, guid: 932a3709eee74cf4d9ff699911d12c56, type: 3}
-  - {fileID: 8300000, guid: 5b45a2b7f26cbf74bba37541a0a5c10f, type: 3}
+  - {fileID: 8300000, guid: 43a989ffa6d9d1c489f74692c1e90759, type: 3}
 --- !u!4 &199213389
 Transform:
   m_ObjectHideFlags: 0
@@ -350,37 +350,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 199213389}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &874895420
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 874895422}
-  m_Layer: 0
-  m_Name: ResizeWindow
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &874895422
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 874895420}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.800795, y: 20.36669, z: -16.584967}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1134436836
 GameObject:
@@ -1020,4 +989,3 @@ SceneRoots:
   - {fileID: 685752618}
   - {fileID: 2115974656}
   - {fileID: 199213389}
-  - {fileID: 874895422}

@@ -907,6 +907,16 @@ public class BoardController : NetworkBehaviour
         rectTransform.anchoredPosition = new Vector2(0,-4);
     }*/
 
+    [ServerRpc(RequireOwnership = false)]
+    public void DeleteInstanceServerRpc()
+    {
+        if (Instance != null)
+        {
+            Destroy(Instance.gameObject);
+            Instance = null;
+        }
+    }
+
     public override void OnDestroy()
     {
         _compositeDisposable.Dispose();

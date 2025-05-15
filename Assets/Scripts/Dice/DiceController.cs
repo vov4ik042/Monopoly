@@ -29,7 +29,6 @@ public class DiceController : NetworkBehaviour
     private void Start()
     {
         lastScreenSize = new Vector2(Screen.width, Screen.height);
-        UpdatePos();
     }
 
     private void Update()
@@ -37,7 +36,6 @@ public class DiceController : NetworkBehaviour
         if (Screen.width != lastScreenSize.x || Screen.height != lastScreenSize.y)
         {
             lastScreenSize = new Vector2(Screen.width, Screen.height);
-            UpdatePos();
         }
     }
 
@@ -84,6 +82,7 @@ public class DiceController : NetworkBehaviour
 
         WriteCubesClientRpc(new NetworkObjectReference(cube1), new NetworkObjectReference(cube2));
     }
+
     [ClientRpc]
     private void WriteCubesClientRpc(NetworkObjectReference networkObjectReference1, NetworkObjectReference networkObjectReference2)
     {
@@ -95,6 +94,7 @@ public class DiceController : NetworkBehaviour
         {
             cube2 = Netcube2.gameObject;
         }
+        UpdatePos();
     }
 
     public void WriteResultCubes()
@@ -155,5 +155,16 @@ public class DiceController : NetworkBehaviour
         }
 
         diceRoll.SnapToClosestFace(mainCamera.transform.rotation.eulerAngles.x);
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void DeleteCubesServerRpc()
+    {
+        if (Instance != null)
+        {
+            cube1.GetComponent<NetworkObject>().Despawn();
+            cube2.GetComponent<NetworkObject>().Despawn();
+            Destroy(Instance.gameObject);
+            Instance = null;
+        }
     }
 }
