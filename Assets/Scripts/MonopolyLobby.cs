@@ -192,12 +192,10 @@ public class MonopolyLobby : NetworkBehaviour
     }
     public async void LeaveLobby()
     {
-        Debug.Log("1");
         if (joinedLobby != null)
         {
             try
             {
-                Debug.Log("2");
                 await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
                 joinedLobby = null;
             }

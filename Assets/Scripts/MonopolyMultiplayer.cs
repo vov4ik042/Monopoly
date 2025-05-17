@@ -143,7 +143,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
 
     public PlayerData GetPlayerDataFromPlayerIndex(int playerIndex)
     {
-        Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count + " playerIndex: " + playerIndex);
+        //Debug.Log("playerDataNetworkList:" + playerDataNetworkList.Count + " playerIndex: " + playerIndex);
         return playerDataNetworkList[playerIndex];
     }
     public bool GetPlayerDataNetworkListNotNull()
@@ -177,13 +177,17 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerData.playerMoney = money;
 
         playerDataNetworkList[playerIndex] = playerData;
-
+        Debug.Log("MOnopoly moneyPLayer: " + playerData.playerMoney);
         TablePlayersUI.Instance.UpdateInfo();
     }
 
     public int GetPlayerMoney(int playerIndex)
     {
         return playerDataNetworkList[playerIndex].playerMoney;
+    }
+    public int GetPlayerDataNetworkListCount()
+    {
+        return playerDataNetworkList.Count;
     }
     public FixedString64Bytes GetPlayerNameFromPlayerData(int playerIndex)
     {

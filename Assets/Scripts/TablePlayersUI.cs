@@ -23,12 +23,35 @@ public class TablePlayersUI : MonoBehaviour
     {
         if (MonopolyMultiplayer.Instance.GetPlayerDataNetworkListNotNull())
         {
-            UpdateInfo();
+            RebuildTablePlayersUI();
+        }
+    }
+    public void RebuildTablePlayersUI()
+    {
+        foreach (Transform child in TemplatesList)
+        {
+            if (child == Template) continue;
+            Destroy(child.gameObject);
+        }
+
+        TemplatesList.Clear();
+
+        int playerCount = MonopolyMultiplayer.Instance.GetPlayerDataNetworkListCount();
+        PutPlayersOnTableUI(playerCount);
+    }
+
+    public void DeleteTemplate(ulong clientId)
+    {
+        if (clientId < (ulong)TemplatesList.Count)
+        {
+            Destroy(TemplatesList[(int)clientId].gameObject);
+            TemplatesList.RemoveAt((int)clientId);
         }
     }
 
     public void UpdateInfo()
     {
+        Debug.Log("Count: " + TemplatesList.Count);
         for (int i = 0; i < TemplatesList.Count; i++)
         {
             TemplatesList[i].gameObject.GetComponent<PlayersTableSingleUI>().UpdatePlayerInfo(i);

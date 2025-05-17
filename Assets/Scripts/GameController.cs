@@ -15,17 +15,20 @@ public class GameController : NetworkBehaviour
     [SerializeField] private Button btnEndTurn;
     [SerializeField] private Button btnBuy;
     [SerializeField] private Button btnEndAndBuy;
+    [SerializeField] private Button btnNotEnoughMoney;
 
     public static GameController Instance;
 
-    private int startMoneyPlayer = 1500;//465
+    private int startMoneyPlayer = 650;//465
     public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
 
     private bool[] playersBunkrupt;
     private List<Player> playersList = new List<Player>();
+    private List<NetworkObject> playersListNetworkObjects = new List<NetworkObject>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
     public event EventHandler AllClientsConnected;
+    public event EventHandler PlayerLeave;
     public event EventHandler<int> AddPropertyListLocalClient;
 
     private void OnEnable()
@@ -51,14 +54,23 @@ public class GameController : NetworkBehaviour
         Instance = this;
         NetworkManager.SceneManager.OnLoadEventCompleted += NetworkManager_OnLoadEventCompleted;
         Instance.AllClientsConnected += GameController_AllClientsConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += GameController_OnClientDisconnectCallback;
     }
-    /*private void Start()
+
+    public void GameController_OnClientDisconnectCallback(ulong clientId)
     {
-        playerBunkruptButton.onClick.AddListener(() =>
+        RemoveAllPlayerObjectsServerRpc(clientId);
+        PlayerLeave?.Invoke(this, EventArgs.Empty);
+        MonopolyMultiplayer.Instance.SetPlayerBankruptServerRpc(clientId);
+        SetPlayerBunkruptServerRpc(clientId);
+        //TablePlayersUI.Instance.DeleteTemplate(clientId);
+
+        int currentPlayerIndex = GetCurrentPlayerIndex();
+        if (currentPlayerIndex == (int)clientId)
         {
-            Bunkrupt.Instance.Show();
-        });
-    }*/
+            NextPlayerTurnServerRpc();
+        }
+    }
 
     private void btnTurnController(int phase)
     {
@@ -88,6 +100,7 @@ public class GameController : NetworkBehaviour
                     btnBuy.gameObject.SetActive(false);
                     btnEndAndBuy.gameObject.SetActive(false);
                     btnEndTurn.gameObject.SetActive(true);
+                    btnEndTurn.interactable = true;//off end
                     break;
                 }
             case 4://Disable all
@@ -107,7 +120,21 @@ public class GameController : NetworkBehaviour
                     btnEndTurn.gameObject.SetActive(false);
                     break;
                 }
+            case 6://NotEnoughMoney
+                {
+                    btnNotEnoughMoney.gameObject.SetActive(true);
+                    break;
+                }
+            case 7://Cancel NotEnoughMoney
+                {
+                    btnNotEnoughMoney.gameObject.SetActive(false);
+                    break;
+                }
         }
+    }
+    public void TurnOnOffButtons(int phase)
+    {
+        btnTurnController(phase);
     }
     private void GameController_AllClientsConnected(object sender, EventArgs e)
     {
@@ -125,7 +152,7 @@ public class GameController : NetworkBehaviour
         }
     }
     [ServerRpc(RequireOwnership = false)]
-    public void SetPlayerBunkruptServerRpc(ulong clientId)
+    public void SetPlayerBunkruptServerRpc(ulong clientId)//ПРоверить
     {
         playersBunkrupt[clientId] = true;
 
@@ -212,7 +239,6 @@ public class GameController : NetworkBehaviour
         Debug.Log("Игроку " + player + " выпало " + steps);
     }
 
-
     public int GetCurrentPlayerIndex()
     {
         return currentPlayerIndex.Value;
@@ -241,6 +267,7 @@ public class GameController : NetworkBehaviour
     }
     private IEnumerator MoveCurrentPlayerCoroutine(int steps)
     {
+        Debug.Log("currentPlayerIndex: " + currentPlayerIndex.Value);
         yield return StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveCoroutine(steps));
         WhatIsANewPlayerPosition(steps);
     }
@@ -358,6 +385,7 @@ public class GameController : NetworkBehaviour
             newPlayer.SetPlayerIdServerRpc(i);
 
             playersList.Add(newPlayer);
+            playersListNetworkObjects.Add(playerObject.GetComponent<NetworkObject>());
         }
     }
 
@@ -384,14 +412,17 @@ public class GameController : NetworkBehaviour
         }
     }
     [ServerRpc(RequireOwnership = false)]
-    private void NextPlayerTurnServerRpc()
+    public void NextPlayerTurnServerRpc()
     {
-        currentPlayerIndex.Value++;
-
-        if (currentPlayerIndex.Value == playersList.Count)
+        do
         {
-            currentPlayerIndex.Value = 0;
+            currentPlayerIndex.Value++;
+            if (currentPlayerIndex.Value == playersBunkrupt.Length)
+            {
+                currentPlayerIndex.Value = 0;
+            }
         }
+        while (playersBunkrupt[currentPlayerIndex.Value] == true);
 
         PlayersTurnChangedClientRpc(currentPlayerIndex.Value);
     }
@@ -468,8 +499,8 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void RemovePlayerFromListServerRpc(ulong clientId)
     {
+        Debug.Log("PlayerslistCount: " + playersList.Count + " clientId: " + clientId);
         playersList.RemoveAt((int)clientId);
-        Debug.Log("PlayerslistCount: " + playersList.Count);
     }
     private void OnDisable()
     {
@@ -500,16 +531,10 @@ public class GameController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void RemoveAllPlayerObjectsServerRpc()
+    public void RemoveAllPlayerObjectsServerRpc(ulong clientId)
     {
-        foreach (var client in NetworkManager.Singleton.ConnectedClients)
-        {
-            GameObject playerObj = client.Value.PlayerObject?.gameObject;
-            if (playerObj != null)
-            {
-                playerObj.GetComponent<NetworkObject>().Despawn();
-            }
-        }
+        playersListNetworkObjects[(int)clientId].Despawn();
+        playersListNetworkObjects.RemoveAt((int)clientId);
     }
     public override void OnNetworkDespawn()
     {

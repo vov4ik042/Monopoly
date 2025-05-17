@@ -36,6 +36,7 @@ public class DiceController : NetworkBehaviour
         if (Screen.width != lastScreenSize.x || Screen.height != lastScreenSize.y)
         {
             lastScreenSize = new Vector2(Screen.width, Screen.height);
+            UpdatePos();
         }
     }
 
@@ -50,8 +51,8 @@ public class DiceController : NetworkBehaviour
         cube1.transform.position = pos1;
         cube2.transform.position = pos2;
 
-        Debug.Log("cameraRightMiddle1:" + pos1);
-        Debug.Log("cameraRightMiddle2:" + pos2);
+        //Debug.Log("cameraRightMiddle1:" + pos1);
+        //Debug.Log("cameraRightMiddle2:" + pos2);
 
         /*Vector3 viewportPos = mainCamera.WorldToViewportPoint(cube2.transform.position);
 

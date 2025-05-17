@@ -2,18 +2,28 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Networking.Transport;
 
 public class Player : NetworkBehaviour
 {
     private int playerID;
-    private int moneyPlayer;
-    private int currentPosition;
+    private NetworkVariable<int> moneyPlayer = new NetworkVariable<int>(0);
     private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
+    private int currentPosition;
 
     private void Start()
     {
         currentPosition = 0;
     }
+    private void OnEnable()
+    {
+        moneyPlayer.OnValueChanged += OnMoneyPlayerChanged;
+    }
+    private void OnDisable()
+    {
+        moneyPlayer.OnValueChanged -= OnMoneyPlayerChanged;
+    }
+
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerIdServerRpc(int index)
     {
@@ -31,13 +41,45 @@ public class Player : NetworkBehaviour
     }
     public void SetPlayerMoney(int value)
     {
-        moneyPlayer += value;
-        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, moneyPlayer);
-        TablePlayersUI.Instance.UpdateInfo();
+        moneyPlayer.Value += value;
     }
     public int GetPlayerMoney()
     { 
-        return moneyPlayer;
+        return moneyPlayer.Value;
+    }
+
+    private void OnMoneyPlayerChanged(int previousValue, int newValue)
+    {
+        MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, newValue);
+        TablePlayersUI.Instance.UpdateInfo();
+
+        ClientRpcParams clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { (ulong)playerID }
+            }
+        };
+
+        VerifyPlayerMoneyTargerClientRpc(newValue, clientRpcParams);
+    }
+
+    [ClientRpc]
+    private void VerifyPlayerMoneyTargerClientRpc(int newValue, ClientRpcParams clientRpcParams)
+    {
+        //Debug.Log("Verify moneyPLayer: " + newValue);
+
+        if ((ulong)playerID == NetworkManager.Singleton.LocalClientId)
+        {
+            if (newValue < 0)
+            {
+                GameController.Instance.TurnOnOffButtons(6);
+            }
+            else
+            {
+                GameController.Instance.TurnOnOffButtons(7);
+            }
+        }
     }
 
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure.Value;

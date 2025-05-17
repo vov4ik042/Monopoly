@@ -189,11 +189,11 @@ public class BoardController : NetworkBehaviour
         {
             if (IsPointerOverUIWithTag("cardInfoPref"))
             {
-                Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
+                //Debug.Log("Клик по UI, но на cardInfoPref — не скрываем");
                 return;
             }
 
-            Debug.Log("Клик по UI — скрываем карту");
+            //Debug.Log("Клик по UI — скрываем карту");
             if (currentCardOpenInfo != null)
             {
                 DeleteCardInfo(localId);
@@ -390,7 +390,7 @@ public class BoardController : NetworkBehaviour
 
             int StartPositionY = operation == 1 ? 118 : 92;
             int phase = operation == 1 ? card.GetPhaseRentCountry() : player.GetPhaseRentInfrastructure() - 1;
-            Debug.Log("phase: " + phase);
+            //Debug.Log("phase: " + phase);
             if (phase != 0)
             {
                 position = new Vector2(129, StartPositionY - (phase * 51));
@@ -469,11 +469,11 @@ public class BoardController : NetworkBehaviour
     {
         Card card = boardCardPositions[index].GetComponent<Card>();
         bool cardCanUpgrade = card.GetCanCardUpgradeOrNot();
-        Debug.Log("cardCanUpgrade: " + cardCanUpgrade);
+        //Debug.Log("cardCanUpgrade: " + cardCanUpgrade);
         if (cardCanUpgrade)
         {
             int phase = boardCardPositions[index].GetComponent<Card>().GetPhaseRentCountry();
-            Debug.Log("phase: " + phase);
+            //Debug.Log("phase: " + phase);
             if (CheckPlayerHasEnoughMoneyToUpgrade(index))//Проверка на наличие денег у игрока на улучшение
             {
                 ShowHideUpgradeButton(true);
@@ -771,8 +771,8 @@ public class BoardController : NetworkBehaviour
     {
         Player player = GameController.Instance.GetCurrentPlayerServerOnly();
         Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
-        int priceToUpgrade = card.GetPriceHotel();
 
+        int priceToUpgrade = card.GetPriceHotel();
         player.UpgradeOrDemoteCity(priceToUpgrade);
         card.SetPhaseRentCountry(true);
 
@@ -793,7 +793,6 @@ public class BoardController : NetworkBehaviour
         Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
 
         int priceToDemote = card.GetPriceHotel() / 2;
-
         player.UpgradeOrDemoteCity(-priceToDemote);
         card.SetPhaseRentCountry(false);
 
@@ -817,15 +816,34 @@ public class BoardController : NetworkBehaviour
             Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
 
             int cardPrice = card.GetPriceCard(currentCardIndex);
-
             player.SellCard(cardPrice, currentCardIndex);
 
             SellCityOrInfrastructureReact(currentCardIndex, player);
             SetDefaultColorCardOnBoard(currentCardIndex);
-
             ChangesInfoCardServerRpc(currentCardIndex, localId);
 
             Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
+        }
+        else
+        {
+            Debug.Log("currentCardInfoIndex = 0 or NULL");
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerSellCardBunkruptServerRpc(int currentCardIndex, ulong localId)
+    {
+        if (currentCardIndex != 0)
+        {
+            Player player = GameController.Instance.GetCurrentPlayerServerOnly();
+            Card card = boardCardPositions[currentCardIndex].GetComponent<Card>();
+
+            int cardPrice = card.GetPriceCard(currentCardIndex);
+            player.SellCard(cardPrice, currentCardIndex);
+
+            SellCityOrInfrastructureReact(currentCardIndex, player);
+            SetDefaultColorCardOnBoard(currentCardIndex);
+            ChangesInfoCardServerRpc(currentCardIndex, localId);
         }
         else
         {

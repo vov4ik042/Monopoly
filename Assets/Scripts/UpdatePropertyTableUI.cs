@@ -15,6 +15,25 @@ public class UpdatePropertyTableUI : MonoBehaviour
         ButtonTemplate.gameObject.SetActive(false);
         GameController.Instance.AddPropertyListLocalClient += AddPropertyTableUI_PropertyListLocalClientChanged;
         BoardController.Instance.DeletePropertyListLocalClient += DeletePropertyTableUI_DeletePropertyListLocalClient;
+        Bunkrupt.Instance.PlayerBunkrupt += Bunkrupt_PlayerBunkrupt;
+        GameController.Instance.PlayerLeave += Bunkrupt_PlayerBunkrupt;
+    }
+
+    private void Bunkrupt_PlayerBunkrupt(object sender, System.EventArgs e)
+    {
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+
+        foreach (int card in cardsList)
+        {
+            BoardController.Instance.PlayerSellCardBunkruptServerRpc(card, localId);
+        }
+
+        foreach (Transform child in Container.transform)
+        {
+            if (child == ButtonTemplate) continue;
+            Destroy(child.gameObject);
+        }
+        cardsList.Clear();
     }
 
     private void DeletePropertyTableUI_DeletePropertyListLocalClient(object sender, int e)
