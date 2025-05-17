@@ -19,5 +19,21 @@ public class MainMenuCleanUp : MonoBehaviour
         {
             Destroy(MonopolyLobby.Instance.gameObject);
         }
+        if (GameController.Instance != null)
+        {
+            Destroy(GameController.Instance.gameObject);
+        }
+        if (BoardController.Instance != null)
+        {
+            Destroy(BoardController.Instance.gameObject);
+        }
+        if (TablePlayersUI.Instance != null)
+        {
+            Destroy(TablePlayersUI.Instance.gameObject);
+        }
+        if (DiceController.Instance != null)
+        {
+            Destroy(DiceController.Instance.gameObject);
+        }
     }
 }

@@ -51,7 +51,7 @@ public class TablePlayersUI : MonoBehaviour
 
     public void UpdateInfo()
     {
-        Debug.Log("Count: " + TemplatesList.Count);
+        //Debug.Log("Count: " + TemplatesList.Count);
         for (int i = 0; i < TemplatesList.Count; i++)
         {
             TemplatesList[i].gameObject.GetComponent<PlayersTableSingleUI>().UpdatePlayerInfo(i);

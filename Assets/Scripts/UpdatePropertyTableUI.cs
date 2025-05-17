@@ -79,4 +79,11 @@ public class UpdatePropertyTableUI : MonoBehaviour
         newItem.gameObject.SetActive(true);
         newItem.GetComponent<UpdatePropertySingleUI>().UpdateInfo(name, price, id, clientId);
     }
+    private void OnDestroy()
+    {
+        /*GameController.Instance.AddPropertyListLocalClient -= AddPropertyTableUI_PropertyListLocalClientChanged;
+        BoardController.Instance.DeletePropertyListLocalClient -= DeletePropertyTableUI_DeletePropertyListLocalClient;
+        Bunkrupt.Instance.PlayerBunkrupt -= Bunkrupt_PlayerBunkrupt;
+        GameController.Instance.PlayerLeave -= Bunkrupt_PlayerBunkrupt;*/
+    }
 }

@@ -153,13 +153,18 @@ public class MonopolyMultiplayer : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerBankruptServerRpc(ulong clientId)
     {
-        int playerDataIndex = GetPlayerDataIndexFromClientId(clientId);
+        if (playerDataNetworkList.Count > 0)
+        {
+            int playerDataIndex = GetPlayerDataIndexFromClientId(clientId);
+            if(playerDataIndex != -1)
+            {
+                PlayerData playerData = playerDataNetworkList[playerDataIndex];
 
-        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+                playerData.playerBankrupt = true;
 
-        playerData.playerBankrupt = true;
-
-        playerDataNetworkList[playerDataIndex] = playerData;
+                playerDataNetworkList[playerDataIndex] = playerData;
+            }
+        }
     }
     public bool GetPlayerBankrupt(int playerIndex)
     {
@@ -177,7 +182,7 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerData.playerMoney = money;
 
         playerDataNetworkList[playerIndex] = playerData;
-        Debug.Log("MOnopoly moneyPLayer: " + playerData.playerMoney);
+        //Debug.Log("MOnopoly moneyPLayer: " + playerData.playerMoney);
         TablePlayersUI.Instance.UpdateInfo();
     }
 
@@ -295,12 +300,23 @@ public class MonopolyMultiplayer : NetworkBehaviour
         NetworkManager_Server_OnClientDisconnectCallback(clientId);
     }
     [ServerRpc(RequireOwnership = false)]
-    public void DeleteInstanceServerRpc()
+    public void DeleteInstanceAndClearListsServerRpc()
     {
-        if (Instance != null)
+        if (playerDataNetworkList != null)
         {
-            Destroy(Instance.gameObject);
+            playerDataNetworkList.Clear();
+        }
+    }
+    public override void OnDestroy()
+    {
+        if (Instance == this)
+        {
             Instance = null;
+        }
+        if (playerDataNetworkList != null)
+        {
+            playerDataNetworkList.OnListChanged -= PlayerDataNetworkList_OnListChanged;
+            playerDataNetworkList.Dispose();
         }
     }
 }

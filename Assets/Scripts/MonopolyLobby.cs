@@ -225,12 +225,11 @@ public class MonopolyLobby : NetworkBehaviour
     {
         return joinedLobby != null && joinedLobby.HostId == AuthenticationService.Instance.PlayerId;
     }
-    [ServerRpc(RequireOwnership = false)]
-    public void DeleteInstanceServerRpc()
+
+    public override void OnDestroy()
     {
-        if (Instance != null)
+        if (Instance == this)
         {
-            Destroy(Instance.gameObject);
             Instance = null;
         }
     }

@@ -9,11 +9,8 @@ public class PlayersTableUI : MonoBehaviour
     [SerializeField] private Button btnVoteKick;
     [SerializeField] private Button btnLeaveGame;
 
-    private static PlayersTableUI Instance;
-
     private void Awake()
     {
-        Instance = this;
         btnBunkrupt.onClick.AddListener(() =>
         {
             Bunkrupt.Instance.Show();

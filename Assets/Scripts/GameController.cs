@@ -25,7 +25,7 @@ public class GameController : NetworkBehaviour
 
     private bool[] playersBunkrupt;
     private List<Player> playersList = new List<Player>();
-    private List<NetworkObject> playersListNetworkObjects = new List<NetworkObject>();
+    private Dictionary<ulong, NetworkObject> playersListNetworkObjects = new Dictionary<ulong, NetworkObject>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
     public event EventHandler AllClientsConnected;
     public event EventHandler PlayerLeave;
@@ -60,7 +60,9 @@ public class GameController : NetworkBehaviour
     public void GameController_OnClientDisconnectCallback(ulong clientId)
     {
         RemoveAllPlayerObjectsServerRpc(clientId);
+
         PlayerLeave?.Invoke(this, EventArgs.Empty);
+
         MonopolyMultiplayer.Instance.SetPlayerBankruptServerRpc(clientId);
         SetPlayerBunkruptServerRpc(clientId);
         //TablePlayersUI.Instance.DeleteTemplate(clientId);
@@ -154,24 +156,27 @@ public class GameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerBunkruptServerRpc(ulong clientId)//ПРоверить
     {
-        playersBunkrupt[clientId] = true;
-
-        int playerIndex = -1;
-        byte count = 0;
-
-        for (int i = 0; i < playersBunkrupt.Length; i++)
+        if (playersBunkrupt.Length > 0)
         {
-            if (playersBunkrupt[i] == false)
+            playersBunkrupt[clientId] = true;
+
+            int playerIndex = -1;
+            byte count = 0;
+
+            for (int i = 0; i < playersBunkrupt.Length; i++)
             {
-                count++;
-                playerIndex = i;
+                if (playersBunkrupt[i] == false)
+                {
+                    count++;
+                    playerIndex = i;
+                }
             }
-        }
 
-        if (count == 1)
-        {
-            string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerData(playerIndex).ToString();
-            SetPlayerBunkruptClientRpc(playerName);
+            if (count == 1)
+            {
+                string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerData(playerIndex).ToString();
+                SetPlayerBunkruptClientRpc(playerName);
+            }
         }
     }
     [ClientRpc]
@@ -385,7 +390,7 @@ public class GameController : NetworkBehaviour
             newPlayer.SetPlayerIdServerRpc(i);
 
             playersList.Add(newPlayer);
-            playersListNetworkObjects.Add(playerObject.GetComponent<NetworkObject>());
+            playersListNetworkObjects[(ulong)i] = playerObject.GetComponent<NetworkObject>();
         }
     }
 
@@ -521,21 +526,48 @@ public class GameController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void DeleteInstanceServerRpc()
+    public void DeleteInstanceAndClearListsServerRpc()
+    { 
+        playersList.Clear();
+        Array.Clear(playersBunkrupt, 0, playersBunkrupt.Length);
+    }
+    public override void OnDestroy()
     {
-        if (Instance != null)
+        if (Instance == this)
         {
-            Destroy(Instance.gameObject);
             Instance = null;
         }
     }
 
+    /*[ServerRpc(RequireOwnership = false)]
+    public void RemoveAllPlayerObjectsServerRpc(ulong clientId)
+    {
+        if (playersListNetworkObjects.Count > 0 && playersListNetworkObjects[(int)clientId] != null)
+        {
+            playersListNetworkObjects[(int)clientId].Despawn();
+            playersListNetworkObjects.RemoveAt((int)clientId);
+        }
+    }*/
     [ServerRpc(RequireOwnership = false)]
     public void RemoveAllPlayerObjectsServerRpc(ulong clientId)
     {
-        playersListNetworkObjects[(int)clientId].Despawn();
-        playersListNetworkObjects.RemoveAt((int)clientId);
+        if (IsServer)
+        {
+            if (playersListNetworkObjects.Count > 0)
+            {
+                if (playersListNetworkObjects.TryGetValue(clientId, out NetworkObject obj))
+                {
+                    if (obj != null && obj.IsSpawned)
+                    {
+                        obj.Despawn();
+                    }
+
+                    playersListNetworkObjects.Remove(clientId);
+                }
+            }
+        }
     }
+
     public override void OnNetworkDespawn()
     {
         NetworkManager.SceneManager.OnLoadEventCompleted -= NetworkManager_OnLoadEventCompleted;
