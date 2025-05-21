@@ -15,7 +15,7 @@ public class ToggleButtonColor : MonoBehaviour
     {
         button = GetComponent<Button>();
     }
-    private void Start()
+    private void OnEnable()
     {
         originalColor = button.image.color;
 
@@ -36,6 +36,5 @@ public class ToggleButtonColor : MonoBehaviour
     {
         Debug.Log("Color:" + color);
         activeColor = color;
-        button.image.color = originalColor;
     }
 }

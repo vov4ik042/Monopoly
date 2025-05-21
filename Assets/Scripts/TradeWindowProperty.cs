@@ -90,11 +90,11 @@ public class TradeWindowProperty : MonoBehaviour
         RectTransform rectTransform2 = containerPlayer2.GetComponent<RectTransform>();
 
         Vector2 size1 = rectTransform1.sizeDelta;
-        size1.y = 0.0f;
+        size1.y = 33.0f;
         rectTransform1.sizeDelta = size1;
 
         Vector2 size2 = rectTransform2.sizeDelta;
-        size2.y = 0.0f;
+        size2.y = 33.0f;
         rectTransform2.sizeDelta = size2;
 
         foreach (Transform child in containerPlayer1)

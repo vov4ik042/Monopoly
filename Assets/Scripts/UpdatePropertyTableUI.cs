@@ -24,7 +24,7 @@ public class UpdatePropertyTableUI : MonoBehaviour
     {
         RectTransform rect = Container.GetComponent<RectTransform>();
         Vector2 size = rect.sizeDelta;
-        size.y = 0.0f;
+        size.y = 36.0f;
         rect.sizeDelta = size;
 
         foreach (Transform child in Container)
