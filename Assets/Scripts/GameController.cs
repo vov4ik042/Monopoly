@@ -29,7 +29,6 @@ public class GameController : NetworkBehaviour
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
     public event EventHandler AllClientsConnected;
     public event EventHandler PlayerLeave;
-    public event EventHandler<int> AddPropertyListLocalClient;
 
     private void OnEnable()
     {
@@ -335,7 +334,8 @@ public class GameController : NetworkBehaviour
     {
         ulong localId = NetworkManager.Singleton.LocalClientId;
         int cardIndex = BoardController.Instance.WhatCardNumber();
-        AddPropertyListLocalClient?.Invoke(this, cardIndex);
+
+        MonopolyMultiplayer.Instance.AddToPlayerListPropertyServerRpc(localId, cardIndex);
 
         PlayerBuyCardServerRpc(localId, cardIndex);
     }

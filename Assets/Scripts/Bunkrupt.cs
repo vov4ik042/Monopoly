@@ -17,9 +17,6 @@ public class Bunkrupt : MonoBehaviour
     {
         Instance = this;
         Hide();
-    }
-    private void Start()
-    {
         buttonYes.onClick.AddListener(() =>
         {
             NullPlayerInfo();
@@ -30,6 +27,7 @@ public class Bunkrupt : MonoBehaviour
             Hide();
         });
     }
+
     public void Show()
     {
         gameObject.SetActive(true);

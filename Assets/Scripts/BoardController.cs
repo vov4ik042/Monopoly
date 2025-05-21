@@ -43,7 +43,7 @@ public class BoardController : NetworkBehaviour
         { "Netherlands", 2 }// У Нидерландов свой лимит
     };
 
-    public event EventHandler<int> DeletePropertyListLocalClient;
+    //public event EventHandler<int> DeletePropertyListLocalClient;
     private void Awake()
     {
         Instance = this;
@@ -331,7 +331,7 @@ public class BoardController : NetworkBehaviour
         {
             if (result.gameObject.CompareTag(tag))
             {
-                return true; // Нашли объект с нужным тегом
+                return true;
             }
         }
         return false;
@@ -804,7 +804,9 @@ public class BoardController : NetworkBehaviour
     private void PlayerSellCard()
     {
         ulong localId = NetworkManager.Singleton.LocalClientId;
-        DeletePropertyListLocalClient?.Invoke(this, currentCardInfoIndex);
+
+        MonopolyMultiplayer.Instance.RemoveFromPlayerListPropertyServerRpc(localId, currentCardInfoIndex);
+
         PlayerSellCardServerRpc(currentCardInfoIndex, localId);
     }
     [ServerRpc(RequireOwnership = false)]
@@ -857,7 +859,7 @@ public class BoardController : NetworkBehaviour
         {
             if (cardsOpenClients[i] == index)
             {
-                Debug.Log("ChangesInfoCardServerRpc");
+                //Debug.Log("ChangesInfoCardServerRpc");
                 ChangesInfoCardClientRpc(cardsOpenClients[i], (ulong)i);
             }
         }
@@ -865,7 +867,7 @@ public class BoardController : NetworkBehaviour
     [ClientRpc]
     private void ChangesInfoCardClientRpc(int cardIndex, ulong clientId)
     {
-        Debug.Log("clientId: " + clientId + " LocalClientId: " + NetworkManager.Singleton.LocalClientId);
+        //Debug.Log("clientId: " + clientId + " LocalClientId: " + NetworkManager.Singleton.LocalClientId);
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
             if (currentCardOpenInfo != null)
@@ -876,7 +878,7 @@ public class BoardController : NetworkBehaviour
                 {
                     DeleteCardPanelInfo();
                 }
-                Debug.Log("Card Updated");
+                //Debug.Log("Card Updated");
 
                 GetAndSetCardInfoAndPanelInfo(cardIndex, clientId);
             }
@@ -893,10 +895,10 @@ public class BoardController : NetworkBehaviour
 
         if (playerMoney - priceToUpgrade >= 0)
         {
-            Debug.Log("true");
+            //Debug.Log("true");
             return true;
         }
-        Debug.Log("false");
+        //Debug.Log("false");
         return false;
     }
 

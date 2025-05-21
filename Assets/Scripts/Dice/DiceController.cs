@@ -16,15 +16,16 @@ public class DiceController : NetworkBehaviour
     private GameObject cube1;
     private GameObject cube2;
 
-    public float xOff = 0.063f;
-    public float xOff1 = 0.122f;
-    public float yOff = 0.84f;
-    public float distanceFromCamera = 10f; // глубина в мире
+    private float xOff1 = 0.042f;
+    private float xOff2 = 0.107f;
+    private float yOff = 0.818f;
+    private float distanceFromCamera = 10f;
+    private Vector2 lastScreenSize;
+
     private void Awake()
     {
         Instance = this;
     }
-    private Vector2 lastScreenSize;
 
     private void Start()
     {
@@ -42,8 +43,8 @@ public class DiceController : NetworkBehaviour
 
     private void UpdatePos()
     {
-        Vector3 pos1 = mainCamera.ViewportToWorldPoint(new Vector3(xOff, yOff, distanceFromCamera));
-        Vector3 pos2 = mainCamera.ViewportToWorldPoint(new Vector3(xOff1, yOff, distanceFromCamera));
+        Vector3 pos1 = mainCamera.ViewportToWorldPoint(new Vector3(xOff1, yOff, distanceFromCamera));
+        Vector3 pos2 = mainCamera.ViewportToWorldPoint(new Vector3(xOff2, yOff, distanceFromCamera));
 
         pos1.z = cube1.transform.position.z;
         pos2.z = cube2.transform.position.z;
@@ -54,21 +55,26 @@ public class DiceController : NetworkBehaviour
         //Debug.Log("cameraRightMiddle1:" + pos1);
         //Debug.Log("cameraRightMiddle2:" + pos2);
 
-        /*Vector3 viewportPos = mainCamera.WorldToViewportPoint(cube2.transform.position);
+        /*Vector3 viewportPos1 = mainCamera.WorldToViewportPoint(cube1.transform.position);
+        Vector3 viewportPos2 = mainCamera.WorldToViewportPoint(cube2.transform.position);
 
-        float distanceToLeft = viewportPos.x;           // от 0 до 1
-        float distanceToTop = 1f - viewportPos.y;       // от 0 до 1
+        float distanceToLeft = viewportPos1.x;
+        float distanceToTop = 1f - viewportPos1.y;
 
-        Debug.Log("До левого края: " + distanceToLeft);
-        Debug.Log("До верхнего края: " + distanceToTop);*/
+        Debug.Log("До левого края1: " + distanceToLeft);
+        Debug.Log("До верхнего края1: " + distanceToTop);
+
+        float distanceToLeft2 = viewportPos2.x;
+        float distanceToTop2 = 1f - viewportPos2.y; 
+
+        Debug.Log("До левого края2: " + distanceToLeft2);
+        Debug.Log("До верхнего края2: " + distanceToTop2);*/
     }
 
     public void CreateCubesUI()
     {
-        Vector3 position1 = new Vector3(-8.9f, 19.45f, -15.62f);
-        //Vector3 position1 = new Vector3(-9.24f, 19.58f, -15.62f);
-        Vector3 position2 = new Vector3(-7.8f, 19.45f, -15.62f);
-        //Vector3 position2 = new Vector3(-7.956f, 19.58f, -15.62f);
+        Vector3 position1 = new Vector3(-9.319f, 19.308f, -15.112f);
+        Vector3 position2 = new Vector3(-8.12f, 19.308f, -15.112f);
         Quaternion rotation = Quaternion.Euler(-75, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);

@@ -7,6 +7,7 @@ TagManager:
   - cardInfoPref
   - CardBoardTextField
   - CardsCountry
+  - TradeWindow
   layers:
   - Default
   - TransparentFX

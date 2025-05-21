@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Unity.Collections;
 using Unity.Netcode;
@@ -15,11 +17,12 @@ public class MonopolyMultiplayer : NetworkBehaviour
     private string playerName;
     private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PlayerNameMultiplayer";
     private NetworkList<PlayerData> playerDataNetworkList;
+    private FixedList128Bytes<int> _lastKnownPropertyList;
 
     public event EventHandler OnTryingToJoinGame;
     public event EventHandler OnFailedToJoinGame;
     public event EventHandler OnPlayerDataNetworkListChanged;
-
+    public event EventHandler AddPropertyFromPlayerList;
     private void Awake()
     {
         Instance = this;
@@ -29,7 +32,11 @@ public class MonopolyMultiplayer : NetworkBehaviour
         playerDataNetworkList = new NetworkList<PlayerData>();
         playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
     }
-
+    public override void OnNetworkSpawn()
+    {
+        if (IsClient)
+            StartCoroutine(WatchForPropertyListChanges());
+    }
     public string GetPlayerName()
     {
         return playerName;
@@ -115,6 +122,70 @@ public class MonopolyMultiplayer : NetworkBehaviour
     private void PlayerDataNetworkList_OnListChanged(NetworkListEvent<PlayerData> changeEvent)
     {
         OnPlayerDataNetworkListChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public FixedList128Bytes<int> GetPlayerListProperty(ulong clientId)
+    {
+        return playerDataNetworkList[(int)clientId].playerPropertyList;
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void AddToPlayerListPropertyServerRpc(ulong clientId, int cardNumber)
+    {
+        int playerDataIndex = GetPlayerDataIndexFromClientId(clientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+        playerData.playerPropertyList.Add(cardNumber);
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RemoveFromPlayerListPropertyServerRpc(ulong clientId, int cardNumber)
+    {
+        int playerDataIndex = GetPlayerDataIndexFromClientId(clientId);
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        int index = -1;
+
+        for (int i = 0; i < playerData.playerPropertyList.Length; i++)
+        {
+            if (playerData.playerPropertyList[i] == cardNumber)
+            {
+                index = i; break;
+            }
+        }
+
+        playerData.playerPropertyList.RemoveAt(index);
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+    private IEnumerator WatchForPropertyListChanges()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(0.1f); // можно и чаще
+
+            int index = GetPlayerDataIndexFromClientId(NetworkManager.Singleton.LocalClientId);
+            var currentList = playerDataNetworkList[index].playerPropertyList;
+
+            if (!AreFixedListsEqual(_lastKnownPropertyList, currentList))
+            {
+                _lastKnownPropertyList = currentList;
+                Debug.Log("List Updated Property");
+                AddPropertyFromPlayerList?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+    private bool AreFixedListsEqual(FixedList128Bytes<int> a, FixedList128Bytes<int> b)
+    {
+        if (a.Length != b.Length)
+            return false;
+
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (a[i] != b[i])
+                return false;
+        }
+
+        return true;
     }
 
     private void NetworkManager_ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest connectionApprovalRequest,

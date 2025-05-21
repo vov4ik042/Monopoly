@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,48 +9,35 @@ public class UpdatePropertyTableUI : MonoBehaviour
 {
     [SerializeField] private Transform ButtonTemplate;
     [SerializeField] private Transform Container;
-    private List<int> cardsList = new List<int>();
 
     private void Start()
     {
         ButtonTemplate.gameObject.SetActive(false);
-        GameController.Instance.AddPropertyListLocalClient += AddPropertyTableUI_PropertyListLocalClientChanged;
-        BoardController.Instance.DeletePropertyListLocalClient += DeletePropertyTableUI_DeletePropertyListLocalClient;
+        //GameController.Instance.AddPropertyFromPlayerList += UpdatePropertyTableUI_OnPlayerPropertyListChanged;
+        //BoardController.Instance.RemovePropertyFromPlayerList += UpdatePropertyTableUI_OnPlayerPropertyListChanged;
+        MonopolyMultiplayer.Instance.AddPropertyFromPlayerList += UpdatePropertyTableUI_OnPlayerPropertyListChanged;
         Bunkrupt.Instance.PlayerBunkrupt += Bunkrupt_PlayerBunkrupt;
         GameController.Instance.PlayerLeave += Bunkrupt_PlayerBunkrupt;
     }
 
-    private void Bunkrupt_PlayerBunkrupt(object sender, System.EventArgs e)
+    private void UpdatePropertyTableUI_OnPlayerPropertyListChanged(object sender, System.EventArgs e)
     {
-        ulong localId = NetworkManager.Singleton.LocalClientId;
+        RectTransform rect = Container.GetComponent<RectTransform>();
+        Vector2 size = rect.sizeDelta;
+        size.y = 0.0f;
+        rect.sizeDelta = size;
 
-        foreach (int card in cardsList)
-        {
-            BoardController.Instance.PlayerSellCardBunkruptServerRpc(card, localId);
-        }
-
-        foreach (Transform child in Container.transform)
+        foreach (Transform child in Container)
         {
             if (child == ButtonTemplate) continue;
             Destroy(child.gameObject);
         }
-        cardsList.Clear();
-    }
-
-    private void DeletePropertyTableUI_DeletePropertyListLocalClient(object sender, int e)
-    {
-        for (int i = 0; i < cardsList.Count; i++)
+        var rawList = MonopolyMultiplayer.Instance.GetPlayerListProperty(NetworkManager.Singleton.LocalClientId);
+        List<int> cardsList = new List<int>();
+        //Debug.Log("cardsListCount: " + cardsList.Count);
+        for (int i = 0; i < rawList.Length; i++)
         {
-            if (cardsList[i] == e)
-            {
-                cardsList.RemoveAt(i);
-            }
-        }
-
-        foreach (Transform child in Container.transform)
-        {
-            if (child == ButtonTemplate) continue;
-            Destroy(child.gameObject);
+            cardsList.Add(rawList[i]);
         }
 
         for (int i = 0; i < cardsList.Count; i++)
@@ -60,12 +48,22 @@ public class UpdatePropertyTableUI : MonoBehaviour
         }
     }
 
-    private void AddPropertyTableUI_PropertyListLocalClientChanged(object sender, int e)
+    private void Bunkrupt_PlayerBunkrupt(object sender, System.EventArgs e)
     {
-        cardsList.Add(e);
-        string cityName = BoardController.Instance.GetCardCityName(e);
-        int cityPrice = BoardController.Instance.GetCardCost(e);
-        AddPropertyToTableUI(cityName, cityPrice, e, NetworkManager.Singleton.LocalClientId);
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+        var rawList = MonopolyMultiplayer.Instance.GetPlayerListProperty(NetworkManager.Singleton.LocalClientId);
+
+        for (int i = 0; i < rawList.Length; i++)
+        {
+            BoardController.Instance.PlayerSellCardBunkruptServerRpc(rawList[i], localId);
+            MonopolyMultiplayer.Instance.RemoveFromPlayerListPropertyServerRpc(localId, rawList[i]);
+        }
+
+        foreach (Transform child in Container)
+        {
+            if (child == ButtonTemplate) continue;
+            Destroy(child.gameObject);
+        }
     }
 
     private void AddPropertyToTableUI(string name, int price, int id, ulong clientId)
@@ -79,6 +77,7 @@ public class UpdatePropertyTableUI : MonoBehaviour
         newItem.gameObject.SetActive(true);
         newItem.GetComponent<UpdatePropertySingleUI>().UpdateInfo(name, price, id, clientId);
     }
+
     private void OnDestroy()
     {
         /*GameController.Instance.AddPropertyListLocalClient -= AddPropertyTableUI_PropertyListLocalClientChanged;

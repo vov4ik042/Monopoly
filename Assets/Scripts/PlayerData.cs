@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using System.Linq;
 using Unity.Netcode;
 
 public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
@@ -12,6 +13,7 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
     public FixedString64Bytes playerId;
     public int playerMoney;
     public bool playerBankrupt;
+    public FixedList128Bytes<int> playerPropertyList;
 
     public bool Equals(PlayerData other)
     {
@@ -21,6 +23,7 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
             playerId == other.playerId &&
             playerMoney == other.playerMoney &&
             playerBankrupt == other.playerBankrupt &&
+            playerPropertyList.SequenceEqual(other.playerPropertyList) &&
             playerName == other.playerName;
     }
 
@@ -32,5 +35,30 @@ public struct PlayerData : IEquatable<PlayerData>, INetworkSerializable
         serializer.SerializeValue(ref playerId);
         serializer.SerializeValue(ref playerMoney);
         serializer.SerializeValue(ref playerBankrupt);
+
+        if (serializer.IsWriter)
+        {
+            int length = playerPropertyList.Length;
+            serializer.SerializeValue(ref length);
+
+            for (int i = 0; i < length; i++)
+            {
+                int value = playerPropertyList[i];
+                serializer.SerializeValue(ref value);
+            }
+        }
+        else
+        {
+            int length = 0;
+            serializer.SerializeValue(ref length);
+            playerPropertyList.Clear();
+
+            for (int i = 0; i < length; i++)
+            {
+                int value = 0;
+                serializer.SerializeValue(ref value);
+                playerPropertyList.Add(value);
+            }
+        }
     }
 }

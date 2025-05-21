@@ -12,6 +12,10 @@ public class CharacterSelectReady : NetworkBehaviour
     {
         Instance = this;
         playerReadyDictionary = new Dictionary<ulong, bool>();
+        if (ResultWindow.Instance != null )
+        {
+            Destroy(ResultWindow.Instance.gameObject);
+        }
     }
 
     public void SetPlayerReady()
