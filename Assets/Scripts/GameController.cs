@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 
 public class GameController : NetworkBehaviour
@@ -136,6 +137,28 @@ public class GameController : NetworkBehaviour
     public void TurnOnOffButtons(int phase)
     {
         btnTurnController(phase);
+    }
+    public Player GetPlayerFromClientId(int clientId)
+    {
+        for (int i = 0; i < playersList.Count; i++)
+        {
+            if (playersList[i].GetPlayerId() == clientId)
+            {
+                return playersList[i];
+            }
+        }
+        return null;
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerMoneyServerRpc(int clientId1, int clientId2, int playerMoney1, int playerMoney2)
+    {
+        Player player1 = GetPlayerFromClientId(clientId1);
+        player1.SetPlayerMoney(-playerMoney1);
+        player1.SetPlayerMoney(+playerMoney2);
+
+        Player player2 = GetPlayerFromClientId(clientId2);
+        player2.SetPlayerMoney(-playerMoney2);
+        player2.SetPlayerMoney(+playerMoney1);
     }
     private void GameController_AllClientsConnected(object sender, EventArgs e)
     {
@@ -351,6 +374,16 @@ public class GameController : NetworkBehaviour
         BoardController.Instance.UpdateColorCardOnBoard(currentPlayerIndex.Value);
         BoardController.Instance.ChangesInfoCardServerRpc(cardIndex, clientId);
         BoardController.Instance.CurrentOwnerCard(cardIndex);//Debug.log
+    }
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerBuyCardForTradeServerRpc(ulong clientId, int cardIndex)
+    {
+        Player player = GetPlayerFromClientId((int)clientId);
+        player.BuyCardForTrade(cardIndex, player, clientId);
+
+        BoardController.Instance.BuyCityOrInfrastructureReact(cardIndex, player);
+        BoardController.Instance.UpdateColorCardOnBoardForTrade(cardIndex, (int)clientId);
+        BoardController.Instance.ChangesInfoCardServerRpc(cardIndex, clientId);
     }
 
     private void PlayerMakeAuction()

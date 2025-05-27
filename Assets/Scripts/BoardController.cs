@@ -1,9 +1,6 @@
 using Cysharp.Threading.Tasks;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using TMPro;
 using UniRx;
 using Unity.Netcode;
@@ -680,6 +677,11 @@ public class BoardController : NetworkBehaviour
         UnityEngine.Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
         boardCardPositions[currentPlayerPosition.Value].GetComponent<Card>().SetOwnerColorField(color);
     }
+    public void UpdateColorCardOnBoardForTrade(int cardIndex, int playerIndex)
+    {
+        UnityEngine.Color color = MonopolyMultiplayer.Instance.GetPlayerColorFromPlayerId(playerIndex);
+        boardCardPositions[cardIndex].GetComponent<Card>().SetOwnerColorField(color);
+    }
 
     public void SetDefaultColorCardOnBoard(int playerIndex)
     {
@@ -926,7 +928,28 @@ public class BoardController : NetworkBehaviour
         RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
         rectTransform.anchoredPosition = new Vector2(0,-4);
     }*/
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerSellCardForTradeServerRpc(int cardIndex, ulong localId)
+    {
+        Player player = GameController.Instance.GetPlayerFromClientId((int)localId);
+        Card card = boardCardPositions[cardIndex].GetComponent<Card>();
+        Player playerOwnercard = card.GetPlayerOwner();
 
+        if (player != null && player == playerOwnercard)
+        {
+            player.SellCardForTrade(cardIndex);
+
+            SellCityOrInfrastructureReact(cardIndex, player);
+            SetDefaultColorCardOnBoard(cardIndex);
+            ChangesInfoCardServerRpc(cardIndex, localId);
+
+            Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
+        }
+        else
+        {
+            Debug.Log("player null");
+        }
+    }
     [ServerRpc(RequireOwnership = false)]
     public void DeleteInstanceServerRpc()
     {

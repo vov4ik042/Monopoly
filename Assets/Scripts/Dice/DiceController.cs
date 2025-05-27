@@ -87,6 +87,7 @@ public class DiceController : NetworkBehaviour
         NetworkObject cube2NetworkObject = cube2.GetComponent<NetworkObject>();
         cube2NetworkObject.Spawn();
 
+        UpdatePos();
         WriteCubesClientRpc(new NetworkObjectReference(cube1), new NetworkObjectReference(cube2));
     }
 

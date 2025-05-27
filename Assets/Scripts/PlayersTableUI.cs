@@ -5,7 +5,7 @@ using Unity.Netcode;
 public class PlayersTableUI : MonoBehaviour
 {
     [SerializeField] private Button btnBunkrupt;
-    [SerializeField] private Button btnTradeKick;
+    [SerializeField] private Button btnTrade;
     [SerializeField] private Button btnLeaveGame;
 
     private void Start()
@@ -16,7 +16,7 @@ public class PlayersTableUI : MonoBehaviour
         {
             Bunkrupt.Instance.Show();
         });
-        btnTradeKick.onClick.AddListener(() =>
+        btnTrade.onClick.AddListener(() =>
         {
             TradeWindow.Instance.gameObject.SetActive(true);
         });
@@ -31,7 +31,7 @@ public class PlayersTableUI : MonoBehaviour
     private void PlayersTableUI_PlayerBunkrupt(object sender, System.EventArgs e)
     {
         btnBunkrupt.gameObject.SetActive(false);
-        btnTradeKick.gameObject.SetActive(false);
+        btnTrade.gameObject.SetActive(false);
         btnLeaveGame.gameObject.SetActive(true);
     }
 }

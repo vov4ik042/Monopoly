@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +8,7 @@ public class ToggleButtonColor : MonoBehaviour
     private Button button;
     //private Color originalColor;
     private bool isActive = false;
+    private int cardId;
 
     private void Awake()
     {
@@ -27,14 +26,21 @@ public class ToggleButtonColor : MonoBehaviour
 
     private void ToggleColor()
     {
-        Debug.Log("ColorChange");
         isActive = !isActive;
         button.image.color = isActive ? activeColor : originalColor;
     }
 
     public void SetColor(Color color)
     {
-        Debug.Log("Color:" + color);
         activeColor = color;
+    }
+
+    public void SetCardId(int id)
+    {
+        cardId = id;
+    }
+    public int GetCardId()
+    {
+        return cardId;
     }
 }

@@ -1,8 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class TradeWindowProperty : MonoBehaviour
@@ -28,7 +26,9 @@ public class TradeWindowProperty : MonoBehaviour
     private int PlayerMoney1;
     private int PlayerMoney2;
     private int PlayerMoneyMinValue = 0;
-    private float HeightForContent = 30.0f;
+
+    private List<int> PlayerPropertyFirstDecided = new List<int>();
+    private List<int> PlayerPropertySecondDecided = new List<int>();
 
     private void Awake()
     {
@@ -38,6 +38,13 @@ public class TradeWindowProperty : MonoBehaviour
         {
             Hide();
         });
+        btnCreateTrade.onClick.AddListener(() =>
+        {
+            Hide();
+            TradesContainerViewUI.instance.AddNewTradeToListServerRpc(clientIdPlayer1, clientIdPlayer2, (int)sliderPlayer1.value, (int)sliderPlayer2.value,
+               PlayerPropertyFirstDecided.ToArray(), PlayerPropertySecondDecided.ToArray());
+            ClearLists();
+        });
         sliderPlayer1.onValueChanged.AddListener(value =>
         {
             UpdateInputField(1, (int)value);
@@ -45,6 +52,21 @@ public class TradeWindowProperty : MonoBehaviour
         sliderPlayer2.onValueChanged.AddListener(value =>
         {
             UpdateInputField(2, (int)value);
+        });
+        inputPlayer1.onValueChanged.AddListener(text =>
+        {
+            if (int.TryParse(text, out int result))
+            {
+                sliderPlayer1.value = Mathf.Clamp(result, sliderPlayer1.minValue, sliderPlayer1.maxValue);
+            }
+        });
+
+        inputPlayer2.onValueChanged.AddListener(text =>
+        {
+            if (int.TryParse(text, out int result))
+            {
+                sliderPlayer2.value = Mathf.Clamp(result, sliderPlayer2.minValue, sliderPlayer2.maxValue);
+            }
         });
     }
     private void OnEnable()
@@ -54,6 +76,18 @@ public class TradeWindowProperty : MonoBehaviour
 
         InitializeInfo();
         InitializeProperty();
+    }
+
+    private void VerifyAddOrRemoveFromListFirst(ref List<int> list, int cardId)
+    {
+        if (list.Contains(cardId))
+        {
+            list.Remove(cardId);
+        }
+        else
+        {
+            list.Add(cardId);
+        }
     }
 
     private void InitializeInfo()
@@ -112,21 +146,26 @@ public class TradeWindowProperty : MonoBehaviour
         var playerList1 = MonopolyMultiplayer.Instance.GetPlayerListProperty((ulong)clientIdPlayer1);
         var playerList2 = MonopolyMultiplayer.Instance.GetPlayerListProperty((ulong)clientIdPlayer2);
 
-        Debug.Log("cardsListCount1: " + playerList1.Length);
-        Debug.Log("cardsListCount2: " + playerList2.Length);
-
         for (int i = 0; i < playerList1.Length; i++)
         {
             Transform property = Instantiate(template1, containerPlayer1);
             property.gameObject.SetActive(true);
 
             string cityName = BoardController.Instance.GetCardCityName(playerList1[i]);
+            property.GetComponent<ToggleButtonColor>().SetCardId(playerList1[i]);
             TextMeshProUGUI textbtn = property.GetComponentInChildren<TextMeshProUGUI>();
 
             textbtn.text = cityName;
 
             size1.y += 33.0f;
             rectTransform1.sizeDelta = size1;
+
+            property.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                int cardId = property.GetComponent<ToggleButtonColor>().GetCardId();
+                //Debug.Log("cardId: " + cardId);
+                VerifyAddOrRemoveFromListFirst(ref PlayerPropertyFirstDecided, cardId);
+            });
         }
 
         for (int i = 0; i < playerList2.Length; i++)
@@ -135,14 +174,20 @@ public class TradeWindowProperty : MonoBehaviour
             property.gameObject.SetActive(true);
 
             string cityName = BoardController.Instance.GetCardCityName(playerList2[i]);
+            property.GetComponent<ToggleButtonColor>().SetCardId(playerList2[i]);
             TextMeshProUGUI textbtn = property.GetComponentInChildren<TextMeshProUGUI>();
 
             textbtn.text = cityName;
 
             size2.y += 33.0f;
             rectTransform2.sizeDelta = size2;
-        }
 
+            property.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                int cardId = property.GetComponent<ToggleButtonColor>().GetCardId();
+                VerifyAddOrRemoveFromListFirst(ref PlayerPropertySecondDecided, cardId);
+            });
+        }
     }
     private void UpdateInputField(int player, int value)
     {
@@ -165,5 +210,10 @@ public class TradeWindowProperty : MonoBehaviour
     public void Hide()
     {
         gameObject.SetActive(false);
+    }
+    private void ClearLists()
+    {
+        PlayerPropertyFirstDecided.Clear();
+        PlayerPropertySecondDecided.Clear();
     }
 }

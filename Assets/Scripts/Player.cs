@@ -134,6 +134,13 @@ public class Player : NetworkBehaviour
         card.SetClientOwnerId(clientId);
         card.ShowHideCardPriceText(false);
     }
+    public void BuyCardForTrade(int cardIndex, Player player, ulong clientId)//ServerRpc
+    {
+        Card card = BoardController.Instance.GetCardObject(cardIndex);
+        card.SetPlayerOwner(player);
+        card.SetClientOwnerId(clientId);
+        card.ShowHideCardPriceText(false);
+    }
     public void SellCard(int cardPrice, int index)
     {
         Card card = BoardController.Instance.GetCardObject(index);
@@ -143,7 +150,14 @@ public class Player : NetworkBehaviour
         card.ShowHideCardPriceText(true);
         Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPlayerOwner());
     }
-
+    public void SellCardForTrade(int index)
+    {
+        Card card = BoardController.Instance.GetCardObject(index);
+        card.SetPlayerOwner(null);
+        card.SetClientOwnerId(0);
+        card.ShowHideCardPriceText(true);
+        Debug.Log("Карта: " + card + " продана при обмене, текущий владелец " + card.GetPlayerOwner());
+    }
     public void AuctionCard()
     {
 
