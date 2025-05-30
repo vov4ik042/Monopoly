@@ -644,7 +644,7 @@ public class BoardController : NetworkBehaviour
         return null;
     }
 
-    public int ReturnPLayerPosition() => currentPlayerPosition.Value;
+    public int ReturnPlayerPosition() => currentPlayerPosition.Value;
     public Card GetCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;

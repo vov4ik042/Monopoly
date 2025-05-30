@@ -7,9 +7,14 @@ using Unity.Networking.Transport;
 public class Player : NetworkBehaviour
 {
     private int playerID;
+    private NetworkVariable<bool> inJail = new NetworkVariable<bool>(false);
     private NetworkVariable<int> moneyPlayer = new NetworkVariable<int>(0);
     private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
     private int currentPosition;
+    private int VisitJailPositionIndex;//Server
+    private int countTimeInPrison = 0;//Server
+    private int countTimeInVacationLeft = 0;//Server
+    public event EventHandler playerCircleGameBoard;
 
     private void Start()
     {
@@ -46,6 +51,44 @@ public class Player : NetworkBehaviour
     public int GetPlayerMoney()
     { 
         return moneyPlayer.Value;
+    }
+    public void SetJail(bool value)
+    {
+        inJail.Value = value;
+    }
+    public bool GetJail()
+    {
+        return inJail.Value;
+    }
+    public void SetJailVisit(int value)
+    {
+        VisitJailPositionIndex = value;
+    }
+    public int GetJailVisit()
+    {
+        return VisitJailPositionIndex;
+    }
+    public void SetCountTimeInPrison(int value)
+    {
+        countTimeInPrison += value;
+    }
+    public int GetCountTimeInPrison()
+    {
+        return countTimeInPrison;
+    }
+    public void SetVacationTimeLeftAndGiveMoney(int value)
+    {
+        SetPlayerMoney(value);
+        Debug.Log("player: " + playerID + " get from vacation: " + value + "$");
+        SetVacationTimeLeft(2);
+    }
+    public int GetVacationTimeLeft()
+    {
+        return countTimeInVacationLeft;
+    }
+    public void SetVacationTimeLeft(int value)
+    {
+        countTimeInVacationLeft += value;
     }
 
     private void OnMoneyPlayerChanged(int previousValue, int newValue)
@@ -97,6 +140,7 @@ public class Player : NetworkBehaviour
 
             if (nextPosition == 40)
             {
+                playerCircleGameBoard?.Invoke(this, EventArgs.Empty);
                 nextPosition = 0;
             }
 
@@ -124,6 +168,43 @@ public class Player : NetworkBehaviour
             BoardController.Instance.CurrentPlayerPosition(currentPosition);
         }
         //Debug.Log("currentPosition " + currentPosition.Value);
+    }
+
+    public IEnumerator PlayerMoveToJail()
+    {
+        int nextPosition = 10;
+        float playerHeight = 0.16f;
+        float elapsedTime = 0f;
+        float moveDuration = 1.9f;
+        Vector3 startPosition = gameObject.transform.position;
+        Vector3 goTo = BoardController.Instance.GetBoardPosition(nextPosition);
+        goTo.y = playerHeight;
+
+        while (elapsedTime < moveDuration)
+        {
+            gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime / moveDuration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+        currentPosition = 10;
+    }
+    public IEnumerator PlayerMoveToPointInJailVisit(Vector3 goTo)
+    {
+        float playerHeight = 0.16f;
+        float elapsedTime = 0f;
+        float moveDuration = .6f;
+
+        Vector3 startPosition = gameObject.transform.position;
+
+        goTo.y = playerHeight;
+
+        Debug.Log("goto: " + goTo);
+        while (elapsedTime < moveDuration)
+        {
+            gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime / moveDuration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
     }
 
     public void BuyCard(int cardIndex, int cardCost, Player player, ulong clientId)//ServerRpc
@@ -191,7 +272,7 @@ public class Player : NetworkBehaviour
         SetPlayerMoney(treasure);
         Debug.Log("player " + playerID + " got " + treasure);
     }
-    public void PlayerPayTax(int number)
+    public int PlayerPayTax(int number)
     {
         int result;
         if (number == 2)//15% tax
@@ -204,6 +285,7 @@ public class Player : NetworkBehaviour
         }
         SetPlayerMoney(-result);
         Debug.Log("player " + playerID + " paid " + result + " for tax");
+        return result;
     }
 
     public void UpgradeOrDemoteCity(int sumToPay)

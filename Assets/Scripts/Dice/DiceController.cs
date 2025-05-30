@@ -10,11 +10,9 @@ public class DiceController : NetworkBehaviour
     [SerializeField] private GameObject cubePrefab;
     [SerializeField] private GameObject dicePlate1;
     [SerializeField] private GameObject dicePlate2;
-    [SerializeField] private GameObject diceParent;
     [SerializeField] private Camera mainCamera;
-
-    private GameObject cube1;
-    private GameObject cube2;
+    [SerializeField] private GameObject cube2;
+    [SerializeField] private GameObject cube1;
 
     private float xOff1 = 0.042f;
     private float xOff2 = 0.107f;
@@ -29,19 +27,19 @@ public class DiceController : NetworkBehaviour
 
     private void Start()
     {
-        lastScreenSize = new Vector2(Screen.width, Screen.height);
+        //lastScreenSize = new Vector2(Screen.width, Screen.height);
     }
 
-    private void Update()
+    /*private void Update()
     {
         if (Screen.width != lastScreenSize.x || Screen.height != lastScreenSize.y)
         {
             lastScreenSize = new Vector2(Screen.width, Screen.height);
             UpdatePos();
         }
-    }
+    }*/
 
-    private void UpdatePos()
+    /*private void UpdatePos()
     {
         Vector3 pos1 = mainCamera.ViewportToWorldPoint(new Vector3(xOff1, yOff, distanceFromCamera));
         Vector3 pos2 = mainCamera.ViewportToWorldPoint(new Vector3(xOff2, yOff, distanceFromCamera));
@@ -55,7 +53,7 @@ public class DiceController : NetworkBehaviour
         //Debug.Log("cameraRightMiddle1:" + pos1);
         //Debug.Log("cameraRightMiddle2:" + pos2);
 
-        /*Vector3 viewportPos1 = mainCamera.WorldToViewportPoint(cube1.transform.position);
+        *//*Vector3 viewportPos1 = mainCamera.WorldToViewportPoint(cube1.transform.position);
         Vector3 viewportPos2 = mainCamera.WorldToViewportPoint(cube2.transform.position);
 
         float distanceToLeft = viewportPos1.x;
@@ -68,14 +66,16 @@ public class DiceController : NetworkBehaviour
         float distanceToTop2 = 1f - viewportPos2.y; 
 
         Debug.Log("До левого края2: " + distanceToLeft2);
-        Debug.Log("До верхнего края2: " + distanceToTop2);*/
-    }
+        Debug.Log("До верхнего края2: " + distanceToTop2);*//*
+    }*/
 
     public void CreateCubesUI()
     {
-        Vector3 position1 = new Vector3(-9.319f, 19.308f, -15.112f);
-        Vector3 position2 = new Vector3(-8.12f, 19.308f, -15.112f);
-        Quaternion rotation = Quaternion.Euler(-75, 0, 0);
+        //Vector3 position1 = new Vector3(-9.319f, 19.308f, -15.112f);
+        //Vector3 position2 = new Vector3(-8.12f, 19.308f, -15.112f);
+        Vector3 position1 = new Vector3(0.614f, -24.192f, -1.087f);
+        Vector3 position2 = new Vector3(1.7f, -24.192f, -1.087f);
+        Quaternion rotation = Quaternion.Euler(45, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);
         cube1.GetComponent<DiceRoll>().InitializeDicePlate(dicePlate1);
@@ -87,7 +87,6 @@ public class DiceController : NetworkBehaviour
         NetworkObject cube2NetworkObject = cube2.GetComponent<NetworkObject>();
         cube2NetworkObject.Spawn();
 
-        UpdatePos();
         WriteCubesClientRpc(new NetworkObjectReference(cube1), new NetworkObjectReference(cube2));
     }
 
@@ -102,12 +101,12 @@ public class DiceController : NetworkBehaviour
         {
             cube2 = Netcube2.gameObject;
         }
-        UpdatePos();
+        //UpdatePos();
     }
 
     public void WriteResultCubes()
     {
-        GameController.Instance.SetStepsValueServerRpc(cube1.GetComponent<DiceRoll>().GetResult() + cube2.GetComponent<DiceRoll>().GetResult());
+        GameController.Instance.SetStepsValueServerRpc(cube1.GetComponent<DiceRoll>().GetResult(), cube2.GetComponent<DiceRoll>().GetResult());
     }
 
     public void MakeResultCubesDefault()

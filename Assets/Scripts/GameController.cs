@@ -1,15 +1,17 @@
+using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 public class GameController : NetworkBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
+    [SerializeField] private CinemachineVirtualCamera[] VirtualCameras;
     [SerializeField] private Transform objectCanvas;
     [SerializeField] private Button playerBunkruptButton;
     [SerializeField] private Button btnStartTurn;
@@ -23,8 +25,11 @@ public class GameController : NetworkBehaviour
     private int startMoneyPlayer = 650;//465
     public int steps = 8;//Кол-во клеток перемещения
     private int PlayersConnectedCountServer;
+    private int CountPlayersVisitingJailServerOnly = 0;
+    private int CountMoneyForPlayerVacationServerOnly = 0;
 
     private bool[] playersBunkrupt;
+    private int[] cubesTwoResults = new int[2];//ServerOnly
     private List<Player> playersList = new List<Player>();
     private Dictionary<ulong, NetworkObject> playersListNetworkObjects = new Dictionary<ulong, NetworkObject>();
     private NetworkVariable<int> currentPlayerIndex = new NetworkVariable<int>(0); //Индекс текущего игрока
@@ -35,7 +40,7 @@ public class GameController : NetworkBehaviour
     {
         btnStartTurn.onClick.AddListener(() => {
             btnTurnController(4);
-            RollTheDicesServerRpc();
+            RollTheDicesServerRpc(NetworkManager.Singleton.LocalClientId);
         });
         btnEndTurn.onClick.AddListener(() => {
             EndTurn();
@@ -73,7 +78,12 @@ public class GameController : NetworkBehaviour
             NextPlayerTurnServerRpc();
         }
     }
-
+    [ServerRpc(RequireOwnership = false)]
+    private void GivePlayerMoneyForOneCicleGameBoardServerRpc()
+    {
+        playersList[currentPlayerIndex.Value].SetPlayerMoney(300);
+        Debug.Log($"Give {playersList[currentPlayerIndex.Value].GetPlayerId()} 300$");   
+    }
     private void btnTurnController(int phase)
     {
         switch (phase)
@@ -250,8 +260,11 @@ public class GameController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SetStepsValueServerRpc(int value)
+    public void SetStepsValueServerRpc(int cube1, int cube2)
     {
+        cubesTwoResults[0] = cube1;
+        cubesTwoResults[1] = cube2;
+        int value = cube1 + cube2;
         //steps = value;
         int player = playersList[currentPlayerIndex.Value].GetPlayerId();
 
@@ -266,6 +279,49 @@ public class GameController : NetworkBehaviour
         Debug.Log("Игроку " + player + " выпало " + steps);
     }
 
+    private void LogicForPrisonForServerOnly(ulong clientId)
+    {
+        int cube1 = cubesTwoResults[0];
+        int cube2 = cubesTwoResults[1];
+        //Debug.Log("playersList[currentPlayerIndex.Value].GetCountTimeInPrison(): " + playersList[currentPlayerIndex.Value].GetCountTimeInPrison());
+        if (playersList[currentPlayerIndex.Value].GetCountTimeInPrison() == 2)
+        {
+            Debug.Log("Time to go out from jail, congratulations");
+            playersList[currentPlayerIndex.Value].SetJail(false);
+            playersList[currentPlayerIndex.Value].SetCountTimeInPrison(-2);
+
+            CountPlayersVisitingJailServerOnly++;
+            Vector3 position = NewPositionForJustVisitingJailPlayer();
+            StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
+        }
+        else
+        {
+            if (cube1 == cube2)
+            {
+                playersList[currentPlayerIndex.Value].SetJail(false);
+
+                CountPlayersVisitingJailServerOnly++;
+                Vector3 position = NewPositionForJustVisitingJailPlayer();
+                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
+                Debug.Log("Double cubes, congratulations");
+            }
+            else
+            {
+                playersList[currentPlayerIndex.Value].SetCountTimeInPrison(1);
+                Debug.Log("Not double cubes, unlucky");
+            }
+        }
+
+        ClientRpcParams clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId },
+            }
+        };
+        UpdateButtonOnClientRpc(3, clientRpcParams);
+    }
+
     public int GetCurrentPlayerIndex()
     {
         return currentPlayerIndex.Value;
@@ -277,33 +333,55 @@ public class GameController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void RollTheDicesServerRpc()
+    private void RollTheDicesServerRpc(ulong clientId)
     {
-        StartCoroutine(RollTheDicesCoroutine());
+        StartCoroutine(RollTheDicesCoroutine(clientId));
     }
-    private IEnumerator RollTheDicesCoroutine()
+    private IEnumerator RollTheDicesCoroutine(ulong clientId)
     {
         yield return StartCoroutine(DiceController.Instance.DropDiceCoroutine());
-        MoveCurrentPlayerServerRpc(steps);
+        if (playersList[currentPlayerIndex.Value].GetJail() == false)
+        { 
+            MoveCurrentPlayerServerRpc(steps, clientId);
+        }
+        else
+        {
+            LogicForPrisonForServerOnly(clientId);
+        }
+    }
+
+    [ClientRpc]
+    private void UpdateButtonOnClientRpc(int typeOperation, ClientRpcParams clientRpcParams)
+    {
+        btnTurnController(typeOperation);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void MoveCurrentPlayerServerRpc(int steps)
+    public void MoveCurrentPlayerServerRpc(int steps, ulong clientId)
     {
-        StartCoroutine(MoveCurrentPlayerCoroutine(steps));
+        StartCoroutine(MoveCurrentPlayerCoroutine(steps, clientId));
     }
-    private IEnumerator MoveCurrentPlayerCoroutine(int steps)
+    private IEnumerator MoveCurrentPlayerCoroutine(int steps, ulong clientId)
     {
-        Debug.Log("currentPlayerIndex: " + currentPlayerIndex.Value);
-        yield return StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveCoroutine(steps));
-        WhatIsANewPlayerPosition(steps);
-    }
+        //Debug.Log("currentPlayerIndex: " + currentPlayerIndex.Value);
 
-    private void WhatIsANewPlayerPosition(int steps)
+        yield return StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveCoroutine(steps));
+        WhatIsANewPlayerPosition(clientId);
+    }
+    private void WhatIsANewPlayerPosition(ulong clientId)
     {
         int typeButtonTurn;
         int currentPlayer = currentPlayerIndex.Value;
-        int currentPosition = BoardController.Instance.ReturnPLayerPosition();
+        int currentPosition = BoardController.Instance.ReturnPlayerPosition();
+
+        ClientRpcParams clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId },
+            }
+        };
+        SwitchCameraClientRpc(currentPosition, clientRpcParams);
 
         if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
             currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38)
@@ -323,7 +401,8 @@ public class GameController : NetworkBehaviour
         {
             if (currentPosition == 2 || currentPosition == 22)
             {
-                playersList[currentPlayer].PlayerPayTax(currentPosition);
+                int result = playersList[currentPlayer].PlayerPayTax(currentPosition);
+                CountMoneyForPlayerVacationServerOnly += result;
             }
             if (currentPosition == 5 || currentPosition == 17 || currentPosition == 35)
             {
@@ -333,7 +412,24 @@ public class GameController : NetworkBehaviour
             {
                 playersList[currentPlayer].PlayerGotTreasure();
             }
-
+            if (currentPosition == 30)
+            {
+                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToJail());
+                playersList[currentPlayerIndex.Value].SetJail(true);
+                //Debug.Log("currentPlayerIndex1: " + currentPlayerIndex.Value);
+            }
+            if (currentPosition == 10)
+            {
+                CountPlayersVisitingJailServerOnly++;
+                Vector3 position = NewPositionForJustVisitingJailPlayer();
+                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
+            }
+            if (currentPosition == 20)
+            {
+                playersList[currentPlayerIndex.Value].SetVacationTimeLeftAndGiveMoney(CountMoneyForPlayerVacationServerOnly);
+                CountMoneyForPlayerVacationServerOnly = 0;
+            }
+            //Debug.Log("currentPlayerIndex2: " + currentPlayerIndex.Value);
             typeButtonTurn = 3;
             UpdateButtonTextClientRpc(0, typeButtonTurn);
         }
@@ -341,6 +437,7 @@ public class GameController : NetworkBehaviour
     [ClientRpc]
     private void UpdateButtonTextClientRpc(int sum, int typeButtonTurn)
     {
+        //Debug.Log("currentPlayerIndex3: " + currentPlayerIndex.Value);
         if (IsMyTurn())
         {
             if (typeButtonTurn != 3)
@@ -351,6 +448,74 @@ public class GameController : NetworkBehaviour
             }
             btnTurnController(typeButtonTurn);
         }
+    }
+    [ClientRpc]
+    private void SwitchCameraClientRpc(int currentPosition, ClientRpcParams clientRpcParams)
+    {
+        if (currentPosition > 0 && currentPosition <= 10)
+        {
+            VirtualCameras[0].Priority = 4;
+            VirtualCameras[1].Priority = 1;
+            VirtualCameras[2].Priority = 1;
+            VirtualCameras[3].Priority = 1;
+        }
+        if (currentPosition > 10 && currentPosition <= 20)
+        {
+            VirtualCameras[0].Priority = 1;
+            VirtualCameras[1].Priority = 4;
+            VirtualCameras[2].Priority = 1;
+            VirtualCameras[3].Priority = 1;
+        }
+        if (currentPosition > 20 && currentPosition <= 30)
+        {
+            VirtualCameras[0].Priority = 1;
+            VirtualCameras[1].Priority = 1;
+            VirtualCameras[2].Priority = 4;
+            VirtualCameras[3].Priority = 1;
+        }
+        if ((currentPosition > 30 && currentPosition <= 39) || currentPosition == 0)
+        {
+            VirtualCameras[0].Priority = 1;
+            VirtualCameras[1].Priority = 1;
+            VirtualCameras[2].Priority = 1;
+            VirtualCameras[3].Priority = 4;
+        }
+    }
+    private Vector3 NewPositionForJustVisitingJailPlayer()
+    {
+        if (CountPlayersVisitingJailServerOnly == 7)
+        {
+            CountPlayersVisitingJailServerOnly = 1;
+        }
+        Vector3 newPosition;
+        switch (CountPlayersVisitingJailServerOnly)
+        {
+            case 1:
+                {
+                    return newPosition = new Vector3(-14.23f, 0, -17.93f);
+                }
+            case 2:
+                {
+                    return newPosition = new Vector3(-15.51f, 0, -17.93f);
+                }
+            case 3:
+                {
+                    return newPosition = new Vector3(-16.75f, 0, -17.93f);
+                }
+            case 4:
+                {
+                    return newPosition = new Vector3(-17.95f, 0, -16.729f);
+                }
+            case 5:
+                {
+                    return newPosition = new Vector3(-17.95f, 0, -15.489f);
+                }
+            case 6:
+                {
+                    return newPosition = new Vector3(-17.95f, 0, -14.324f);
+                }
+        }
+        return Vector3.zero;
     }
 
     public void PlayerBuyCard()
@@ -422,9 +587,16 @@ public class GameController : NetworkBehaviour
             newPlayer.SetPlayerMoney(startMoneyPlayer);
             newPlayer.SetPlayerIdServerRpc(i);
 
+            newPlayer.playerCircleGameBoard += GivePlayerMoney_playerCircleGameBoard;
+
             playersList.Add(newPlayer);
             playersListNetworkObjects[(ulong)i] = playerObject.GetComponent<NetworkObject>();
         }
+    }
+
+    private void GivePlayerMoney_playerCircleGameBoard(object sender, EventArgs e)
+    {
+        GivePlayerMoneyForOneCicleGameBoardServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -462,22 +634,36 @@ public class GameController : NetworkBehaviour
         }
         while (playersBunkrupt[currentPlayerIndex.Value] == true);
 
-        PlayersTurnChangedClientRpc(currentPlayerIndex.Value);
+        PlayersTurnChangedClientRpc(currentPlayerIndex.Value, playersList[currentPlayerIndex.Value].GetVacationTimeLeft());
     }
     [ClientRpc]
-    private void PlayersTurnChangedClientRpc(int playerIndex)
+    private void PlayersTurnChangedClientRpc(int playerIndex, int timeVacation)
     {
         ulong clientId = MonopolyMultiplayer.Instance.GetClientIdFromPlayerIndex(playerIndex);
         if (clientId == NetworkManager.LocalClient.ClientId)
         {
-            //Debug.Log("Мой ход.");
-            btnTurnController(1);
+            if (timeVacation == 0)
+            {
+                //Debug.Log("Мой ход.");
+                btnTurnController(1);
+            }
+            else
+            {
+                DecreasePlayerVacationTimeServerRpc(playerIndex);
+                EndTurn();
+            }
         }
         else
         {
             //Debug.Log("not Мой ход.");
             btnTurnController(4);
         }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void DecreasePlayerVacationTimeServerRpc(int playerIndex)
+    {
+        playersList[playerIndex].SetVacationTimeLeft(-1);
     }
 
     private void EndTurn()
@@ -544,7 +730,7 @@ public class GameController : NetworkBehaviour
     {
         btnStartTurn.onClick.RemoveListener(() => {
             btnTurnController(4);
-            RollTheDicesServerRpc();
+            RollTheDicesServerRpc(NetworkManager.Singleton.LocalClientId);
         });
         btnEndTurn.onClick.RemoveListener(() => {
             EndTurn();
