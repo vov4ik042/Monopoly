@@ -88,7 +88,7 @@ public class ResultWindow : NetworkBehaviour
     {
         if (DiceController.Instance != null)
         {
-            //DiceController.Instance.DeleteCubesServerRpc();
+            DiceController.Instance.DeleteCubesServerRpc();
         }
         this.playerName.text = playerName;
         gameObject.SetActive(true);

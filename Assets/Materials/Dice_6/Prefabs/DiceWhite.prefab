@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4770648552771261632}
   - component: {fileID: 3319273360495200074}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -63,7 +63,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1576173769198884685}
   - component: {fileID: 1693867922740697993}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -116,7 +116,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8953950516240387351}
   - component: {fileID: 2679271561085084519}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -169,7 +169,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2874477983701456733}
   - component: {fileID: 9181907081442901878}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -229,7 +229,7 @@ GameObject:
   - component: {fileID: -5177508934790604909}
   - component: {fileID: -4210018135355365648}
   - component: {fileID: 8751360494149940378}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: DiceWhite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -245,7 +245,7 @@ RectTransform:
   m_GameObject: {fileID: 6801955793903224657}
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.45, y: 0.45, z: 0.45}
+  m_LocalScale: {x: 0.47, y: 0.47, z: 0.47}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5150756760417272517}
@@ -350,7 +350,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1270930009
+  GlobalObjectIdHash: 1234661395
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -452,7 +452,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5150756760417272517}
   - component: {fileID: 8914936149130931262}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -505,7 +505,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8264425019341452611}
   - component: {fileID: 6366035907233537353}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 4
   m_TagString: Untagged
   m_Icon: {fileID: 0}

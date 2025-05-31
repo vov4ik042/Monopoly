@@ -11,14 +11,15 @@ public class DiceController : NetworkBehaviour
     [SerializeField] private GameObject dicePlate1;
     [SerializeField] private GameObject dicePlate2;
     [SerializeField] private Camera mainCamera;
-    [SerializeField] private GameObject cube2;
-    [SerializeField] private GameObject cube1;
 
-    private float xOff1 = 0.042f;
+    private GameObject cube2;
+    private GameObject cube1;
+
+    /*private float xOff1 = 0.042f;
     private float xOff2 = 0.107f;
     private float yOff = 0.818f;
     private float distanceFromCamera = 10f;
-    private Vector2 lastScreenSize;
+    private Vector2 lastScreenSize;*/
 
     private void Awake()
     {
@@ -73,8 +74,8 @@ public class DiceController : NetworkBehaviour
     {
         //Vector3 position1 = new Vector3(-9.319f, 19.308f, -15.112f);
         //Vector3 position2 = new Vector3(-8.12f, 19.308f, -15.112f);
-        Vector3 position1 = new Vector3(0.614f, -24.192f, -1.087f);
-        Vector3 position2 = new Vector3(1.7f, -24.192f, -1.087f);
+        Vector3 position1 = new Vector3(0.614f, -24f, -1.087f);
+        Vector3 position2 = new Vector3(1.8f, -24f, -1.087f);
         Quaternion rotation = Quaternion.Euler(45, 0, 0);
 
         cube1 = Instantiate(cubePrefab, position1, rotation);

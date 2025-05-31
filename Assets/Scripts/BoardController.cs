@@ -174,7 +174,7 @@ public class BoardController : NetworkBehaviour
 
         boardCardPositions[8].GetComponent<Card>().InitializeCardInfrastructure("Factory", 200, 25, 50, 100, 200, 400);//Infrastructure
         boardCardPositions[13].GetComponent<Card>().InitializeCardInfrastructure("Stadium", 200, 25, 50, 100, 200, 400);
-        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug\nStore", 200, 25, 50, 100, 200, 400);
+        boardCardPositions[28].GetComponent<Card>().InitializeCardInfrastructure("Drug Store", 200, 25, 50, 100, 200, 400);
         boardCardPositions[33].GetComponent<Card>().InitializeCardInfrastructure("Gas\nStation", 200, 25, 50, 100, 200, 400);
         boardCardPositions[36].GetComponent<Card>().InitializeCardInfrastructure("Airport", 200, 25, 50, 100, 200, 400);
     }

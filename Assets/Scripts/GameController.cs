@@ -381,7 +381,6 @@ public class GameController : NetworkBehaviour
                 TargetClientIds = new ulong[] { clientId },
             }
         };
-        SwitchCameraClientRpc(currentPosition, clientRpcParams);
 
         if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
             currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38)
@@ -433,6 +432,7 @@ public class GameController : NetworkBehaviour
             typeButtonTurn = 3;
             UpdateButtonTextClientRpc(0, typeButtonTurn);
         }
+        SwitchCameraClientRpc(currentPosition, clientRpcParams);
     }
     [ClientRpc]
     private void UpdateButtonTextClientRpc(int sum, int typeButtonTurn)
