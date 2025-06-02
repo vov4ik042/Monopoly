@@ -137,9 +137,9 @@ public class DiceController : NetworkBehaviour
             Rigidbody rb = diceRoll.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                float xForce = Random.Range(40, 70);
-                float yForce = Random.Range(40, 70);
-                float zForce = Random.Range(40, 70);
+                float xForce = Random.Range(60, 90);
+                float yForce = Random.Range(60, 90);
+                float zForce = Random.Range(60, 90);
 
                 Vector3 randomTorque = new Vector3(xForce, yForce, zForce);
 

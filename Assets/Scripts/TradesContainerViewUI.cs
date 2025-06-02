@@ -65,6 +65,10 @@ public class TradesContainerViewUI : NetworkBehaviour
             Vector2 vector2 = rectTransform.sizeDelta;
             vector2.y += 30.0f;
             rectTransform.sizeDelta = vector2;
+
+            string res = $"{playerName1} offer a trade {playerName2}";
+
+            ChatManager.Instance.SendMessageServerRpc(res, -1);
         }
     }
     [ServerRpc(RequireOwnership = false)]

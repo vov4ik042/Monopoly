@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 public class GameController : NetworkBehaviour
@@ -82,7 +81,12 @@ public class GameController : NetworkBehaviour
     private void GivePlayerMoneyForOneCicleGameBoardServerRpc()
     {
         playersList[currentPlayerIndex.Value].SetPlayerMoney(300);
-        Debug.Log($"Give {playersList[currentPlayerIndex.Value].GetPlayerId()} 300$");   
+
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playersList[currentPlayerIndex.Value].GetPlayerId()).ToString();
+        string res = $"Monopoly: {playerName} gets 300$";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log($"Give {playersList[currentPlayerIndex.Value].GetPlayerId()} 300$");   
     }
     private void btnTurnController(int phase)
     {
@@ -266,33 +270,35 @@ public class GameController : NetworkBehaviour
         cubesTwoResults[1] = cube2;
         int value = cube1 + cube2;
         //steps = value;
-        int player = playersList[currentPlayerIndex.Value].GetPlayerId();
+        int playerId = playersList[currentPlayerIndex.Value].GetPlayerId();
 
-        Debug.Log("Игроку " + player + " выпало " + steps);
+        //Debug.Log("Игроку " + playerId + " выпало " + steps);
 
-        UpdateStepsClientRpc(value, player);
-    }
-    [ClientRpc]
-    private void UpdateStepsClientRpc(int value, int player)
-    {
-        //steps = value;
-        Debug.Log("Игроку " + player + " выпало " + steps);
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playerId).ToString();
+        string res = $"Monopoly: {playerName} rolls {steps}";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
     }
 
     private void LogicForPrisonForServerOnly(ulong clientId)
     {
         int cube1 = cubesTwoResults[0];
         int cube2 = cubesTwoResults[1];
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playersList[currentPlayerIndex.Value].GetPlayerId()).ToString();
         //Debug.Log("playersList[currentPlayerIndex.Value].GetCountTimeInPrison(): " + playersList[currentPlayerIndex.Value].GetCountTimeInPrison());
         if (playersList[currentPlayerIndex.Value].GetCountTimeInPrison() == 2)
         {
-            Debug.Log("Time to go out from jail, congratulations");
             playersList[currentPlayerIndex.Value].SetJail(false);
             playersList[currentPlayerIndex.Value].SetCountTimeInPrison(-2);
 
             CountPlayersVisitingJailServerOnly++;
             Vector3 position = NewPositionForJustVisitingJailPlayer();
-            StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
+            StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPoint(position));
+            //Debug.Log("Time to go out from jail, congratulations");
+            //string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playersList[currentPlayerIndex.Value].GetPlayerId()).ToString();
+            string res = $"Monopoly: {playerName} finally get out from jail";
+
+            ChatManager.Instance.SendMessageServerRpc(res, -1);
         }
         else
         {
@@ -302,13 +308,21 @@ public class GameController : NetworkBehaviour
 
                 CountPlayersVisitingJailServerOnly++;
                 Vector3 position = NewPositionForJustVisitingJailPlayer();
-                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
-                Debug.Log("Double cubes, congratulations");
+                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPoint(position));
+                //Debug.Log("Double cubes, congratulations");
+                //string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playersList[currentPlayerIndex.Value].GetPlayerId()).ToString();
+                string res = $"Monopoly: {playerName} gets double cubes and gets out of jail";
+
+                ChatManager.Instance.SendMessageServerRpc(res, -1);
             }
             else
             {
                 playersList[currentPlayerIndex.Value].SetCountTimeInPrison(1);
-                Debug.Log("Not double cubes, unlucky");
+                //Debug.Log("Not double cubes, unlucky");
+                //string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playersList[currentPlayerIndex.Value].GetPlayerId()).ToString();
+                string res = $"Monopoly: {playerName} don`t get double cubes";
+
+                ChatManager.Instance.SendMessageServerRpc(res, -1);
             }
         }
 
@@ -364,7 +378,6 @@ public class GameController : NetworkBehaviour
     private IEnumerator MoveCurrentPlayerCoroutine(int steps, ulong clientId)
     {
         //Debug.Log("currentPlayerIndex: " + currentPlayerIndex.Value);
-
         yield return StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveCoroutine(steps));
         WhatIsANewPlayerPosition(clientId);
     }
@@ -381,6 +394,11 @@ public class GameController : NetworkBehaviour
                 TargetClientIds = new ulong[] { clientId },
             }
         };
+
+        int oldPosition = playersList[currentPlayerIndex.Value].GetCurrentCardIndexPlayerStayon();
+        playersList[currentPlayerIndex.Value].SetCurrentCardIndexPlayerStayon(currentPosition);
+
+        VerifyPlayersPositionOnCard(currentPosition, oldPosition, clientId);
 
         if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
             currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38)
@@ -421,7 +439,7 @@ public class GameController : NetworkBehaviour
             {
                 CountPlayersVisitingJailServerOnly++;
                 Vector3 position = NewPositionForJustVisitingJailPlayer();
-                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPointInJailVisit(position));
+                StartCoroutine(playersList[currentPlayerIndex.Value].PlayerMoveToPoint(position));
             }
             if (currentPosition == 20)
             {
@@ -433,6 +451,68 @@ public class GameController : NetworkBehaviour
             UpdateButtonTextClientRpc(0, typeButtonTurn);
         }
         SwitchCameraClientRpc(currentPosition, clientRpcParams);
+    }
+    private void VerifyPlayersPositionOnCard(int currentPosition, int oldPosition, ulong clientId)
+    {
+        Debug.Log("player old pos: " + oldPosition + " new pos: " + currentPosition);
+
+        if (oldPosition != 0 && oldPosition != 10 && oldPosition != 20 && oldPosition != 30 && oldPosition != 2 && oldPosition != 5 &&
+            oldPosition != 15 && oldPosition != 17 && oldPosition != 22 && oldPosition != 25 && oldPosition != 35 && oldPosition != 38)
+        {
+            Card cardOld = BoardController.Instance.GetCardObject(oldPosition);
+            cardOld.SetCurrentCountPlayers(-1, (int)clientId);
+        }
+        else
+        {
+            CardSpecial cardOld = BoardController.Instance.GetCardSpecialObject(oldPosition);
+            cardOld.SetCurrentCountPlayers(-1, (int)clientId);
+        }
+
+        if (currentPosition != 0 && currentPosition != 10 && currentPosition != 20 && currentPosition != 30 && currentPosition != 2 && currentPosition != 5 &&
+            currentPosition != 15 && currentPosition != 17 && currentPosition != 22 && currentPosition != 25 && currentPosition != 35 && currentPosition != 38)
+        {
+            Card cardNew = BoardController.Instance.GetCardObject(currentPosition);
+            cardNew.SetCurrentCountPlayers(1, (int)clientId);
+
+            if (currentPosition != 10 && currentPosition != 30)
+            {
+                if (cardNew.GetCurrentCountPlayers() > 1)
+                {
+                    var list = cardNew.GetPlayersOnCardList();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        if (i == list[i])
+                        {
+                            Vector3 position = PositionPlayersOnCard(i + 1, cardNew.GetGameObject());
+                            StartCoroutine(playersList[i].PlayerMoveToPoint(position));
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            CardSpecial cardNew = BoardController.Instance.GetCardSpecialObject(currentPosition);
+            cardNew.SetCurrentCountPlayers(1, (int)clientId);
+
+            if (currentPosition != 10 && currentPosition != 30)
+            {
+                Debug.Log("cardNew.GetCurrentCountPlayers():" + cardNew.GetCurrentCountPlayers());
+                if (cardNew.GetCurrentCountPlayers() > 1)
+                {
+                    var list = cardNew.GetPlayersOnCardList();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        if (i == list[i])
+                        {
+                            Debug.Log("i:" + i);
+                            Vector3 position = PositionPlayersOnCard(i + 1, cardNew.GetGameObject());
+                            StartCoroutine(playersList[i].PlayerMoveToPoint(position));
+                        }
+                    }
+                }
+            }
+        }
     }
     [ClientRpc]
     private void UpdateButtonTextClientRpc(int sum, int typeButtonTurn)
@@ -538,7 +618,7 @@ public class GameController : NetworkBehaviour
         BoardController.Instance.BuyCityOrInfrastructureReact(cardIndex, playersList[currentPlayerIndex.Value]);
         BoardController.Instance.UpdateColorCardOnBoard(currentPlayerIndex.Value);
         BoardController.Instance.ChangesInfoCardServerRpc(cardIndex, clientId);
-        BoardController.Instance.CurrentOwnerCard(cardIndex);//Debug.log
+        BoardController.Instance.CurrentOwnerCard(clientId, cardIndex);//Debug.log
     }
     [ServerRpc(RequireOwnership = false)]
     public void PlayerBuyCardForTradeServerRpc(ulong clientId, int cardIndex)
@@ -708,22 +788,68 @@ public class GameController : NetworkBehaviour
                 }
             case 4:
                 {
-                    result.z -= 2 * offsetZ;
+                    result.x += 2 * offsetX;
                     break;
                 }
             case 5:
                 {
-                    result.z -= 2 * offsetZ;
+                    result.z -= offsetZ;
                     result.x += 2 * offsetX;
                     break;
                 }
         }
         return result;
     }
+
+    private Vector3 PositionPlayersOnCard(int i, Vector3 startPosition)
+    {
+        float offSetZ = 1.2f;
+        float offSetX = 0.7f;
+
+        switch (i)
+        {
+            case 1:
+                {
+                    startPosition.x -= offSetX;
+                    break;
+                }
+            case 2:
+                {
+                    startPosition.x += offSetX;
+                    break;
+                }
+            case 3:
+                {
+                    startPosition.x += offSetX;
+                    startPosition.z += offSetZ;
+                    break;
+                }
+            case 4:
+                {
+                    startPosition.x += offSetX;
+                    startPosition.z -= offSetZ;
+                    break;
+                }
+            case 5:
+                {
+                    startPosition.x -= offSetX;
+                    startPosition.z += offSetZ;
+                    break;
+                }
+            case 6:
+                {
+                    startPosition.x -= offSetX;
+                    startPosition.z -= offSetZ;
+                    break;
+                }
+        }
+        return startPosition;
+    }
+
     [ServerRpc(RequireOwnership = false)]
     public void RemovePlayerFromListServerRpc(ulong clientId)
     {
-        Debug.Log("PlayerslistCount: " + playersList.Count + " clientId: " + clientId);
+        //Debug.Log("PlayerslistCount: " + playersList.Count + " clientId: " + clientId);
         playersList.RemoveAt((int)clientId);
     }
     private void OnDisable()

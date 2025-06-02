@@ -7,6 +7,7 @@ using Unity.Networking.Transport;
 public class Player : NetworkBehaviour
 {
     private int playerID;
+    private int currentCardIndexPlayerStayonServerOnly;
     private NetworkVariable<bool> inJail = new NetworkVariable<bool>(false);
     private NetworkVariable<int> moneyPlayer = new NetworkVariable<int>(0);
     private NetworkVariable<int> PhaseRentInfrastructure = new NetworkVariable<int>(0);
@@ -28,6 +29,16 @@ public class Player : NetworkBehaviour
     {
         moneyPlayer.OnValueChanged -= OnMoneyPlayerChanged;
     }
+
+    public void SetCurrentCardIndexPlayerStayon(int index)
+    {
+        currentCardIndexPlayerStayonServerOnly = index;
+    }
+    public int GetCurrentCardIndexPlayerStayon()
+    {
+        return currentCardIndexPlayerStayonServerOnly;
+    }
+
 
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerIdServerRpc(int index)
@@ -79,7 +90,11 @@ public class Player : NetworkBehaviour
     public void SetVacationTimeLeftAndGiveMoney(int value)
     {
         SetPlayerMoney(value);
-        Debug.Log("player: " + playerID + " get from vacation: " + value + "$");
+        //Debug.Log("player: " + playerID + " get from vacation: " + value + "$");
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playerID).ToString();
+        string res = $"Monopoly: {playerName} gets from vacation {value}$";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
         SetVacationTimeLeft(2);
     }
     public int GetVacationTimeLeft()
@@ -90,7 +105,6 @@ public class Player : NetworkBehaviour
     {
         countTimeInVacationLeft += value;
     }
-
     private void OnMoneyPlayerChanged(int previousValue, int newValue)
     {
         MonopolyMultiplayer.Instance.SetPlayerMoneyServerRpc(playerID, newValue);
@@ -126,6 +140,7 @@ public class Player : NetworkBehaviour
     }
 
     public int GetPhaseRentInfrastructure() => PhaseRentInfrastructure.Value;
+    public Vector3 GetGameObject() => gameObject.transform.position;
     public IEnumerator PlayerMoveCoroutine(int steps)
     {
         float playerHeight = 0.16f;
@@ -188,7 +203,7 @@ public class Player : NetworkBehaviour
         }
         currentPosition = 10;
     }
-    public IEnumerator PlayerMoveToPointInJailVisit(Vector3 goTo)
+    public IEnumerator PlayerMoveToPoint(Vector3 goTo)
     {
         float playerHeight = 0.16f;
         float elapsedTime = 0f;
@@ -198,7 +213,7 @@ public class Player : NetworkBehaviour
 
         goTo.y = playerHeight;
 
-        Debug.Log("goto: " + goTo);
+        //Debug.Log("goto: " + goTo);
         while (elapsedTime < moveDuration)
         {
             gameObject.transform.position = Vector3.Lerp(startPosition, goTo, elapsedTime / moveDuration);
@@ -229,7 +244,7 @@ public class Player : NetworkBehaviour
         card.SetPlayerOwner(null);
         card.SetClientOwnerId(0);
         card.ShowHideCardPriceText(true);
-        Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPlayerOwner());
+        //Debug.Log("Карта: " + card + " продана, текущий владелец " + card.GetPlayerOwner());
     }
     public void SellCardForTrade(int index)
     {
@@ -237,7 +252,7 @@ public class Player : NetworkBehaviour
         card.SetPlayerOwner(null);
         card.SetClientOwnerId(0);
         card.ShowHideCardPriceText(true);
-        Debug.Log("Карта: " + card + " продана при обмене, текущий владелец " + card.GetPlayerOwner());
+        //Debug.Log("Карта: " + card + " продана при обмене, текущий владелец " + card.GetPlayerOwner());
     }
     public void AuctionCard()
     {
@@ -260,7 +275,11 @@ public class Player : NetworkBehaviour
         SetPlayerMoney(-sumToPay);
         OwnerCardPlayer.SetPlayerMoney(+sumToPay);
 
-        //StartCoroutine(VerifyPlayerMoney());//Чтобы если баланс отрицательный то пользователь должен продать или обанкротится
+        string playerNameOwnerCard = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(OwnerCardPlayer.playerID).ToString();
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playerID).ToString();
+        string res = $"Monopoly: {playerName} pays {sumToPay}$ {playerNameOwnerCard}";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
     }
 
     public void PlayerBuyCardInfrastructure(int index) => PhaseRentInfrastructure.Value++;
@@ -270,7 +289,11 @@ public class Player : NetworkBehaviour
     {
         int treasure = UnityEngine.Random.Range(25, 325);
         SetPlayerMoney(treasure);
-        Debug.Log("player " + playerID + " got " + treasure);
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playerID).ToString();
+        string res = $"Monopoly: {playerName} gets {treasure}$";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log("player " + playerID + " got " + treasure);
     }
     public int PlayerPayTax(int number)
     {
@@ -284,7 +307,11 @@ public class Player : NetworkBehaviour
             result = GetPlayerMoney() * 5 / 100;
         }
         SetPlayerMoney(-result);
-        Debug.Log("player " + playerID + " paid " + result + " for tax");
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(playerID).ToString();
+        string res = $"Monopoly: {playerName} pays {result}$ for taxes";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log("player " + playerID + " paid " + result + " for tax");
         return result;
     }
 

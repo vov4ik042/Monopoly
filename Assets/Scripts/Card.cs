@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -9,11 +10,38 @@ public class Card : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI cardTextPrice;
     [SerializeField] private MeshRenderer colorOwnerField;
 
-    private NetworkVariable<ulong> clientOwnerId = new NetworkVariable<ulong>(0);
+    private NetworkVariable<ulong> clientOwnerId;
+    private NetworkVariable<bool> CardCanUpgrade;
     //private NetworkVariable<int> PhaseRentCountry = new NetworkVariable<int>(0);
     private int PhaseRentCountry = 0;
-    private NetworkVariable<bool> CardCanUpgrade = new NetworkVariable<bool>(false);
+    private List<int> playersOnCard = new List<int>();
+    private int currentCountPlayers = 0;
 
+    public void SetCurrentCountPlayers(int value, int playerIndex)
+    {
+        if (value == 1)
+        {
+            currentCountPlayers++;
+            playersOnCard.Add(playerIndex);
+        }
+        else
+        {
+            if (currentCountPlayers != 0)
+            {
+                currentCountPlayers--;
+                playersOnCard.Remove(playerIndex);
+            }
+        }
+    }
+    public int GetCurrentCountPlayers()
+    {
+        return currentCountPlayers;
+    }
+    public List<int> GetPlayersOnCardList()
+    {
+        return playersOnCard;
+    }
+    public Vector3 GetGameObject() => gameObject.transform.position;
     private Player PlayerOwner { get; set; } = null;
 
     private string CityName, CountryName;
@@ -35,6 +63,11 @@ public class Card : NetworkBehaviour
         Color32 c32 = color;
         int value = (c32.a << 24) | (c32.r << 16) | (c32.g << 8) | c32.b;
         return value;
+    }
+    private void Awake()
+    {
+        clientOwnerId = new NetworkVariable<ulong>(0);
+        CardCanUpgrade = new NetworkVariable<bool>(false);
     }
 
     public void SetClientOwnerId(ulong clientOwnerId)

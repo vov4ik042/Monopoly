@@ -114,7 +114,11 @@ public class BoardController : NetworkBehaviour
 
         if (allSameOwner)
         {
-            Debug.Log($"Все города в {countryName} принадлежат игроку {owner.GetPlayerId()}!");//
+            string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId(owner.GetPlayerId()).ToString();
+            string res = $"Monopoly: {playerName} bought the whole {countryName}";
+
+            ChatManager.Instance.SendMessageServerRpc(res, -1);
+            //Debug.Log($"Все города в {countryName} принадлежат игроку {owner.GetPlayerId()}!");//
             MakeCardsCountryPossibleToUpgrade(listCitiesCountry, true);
         }
         else
@@ -352,7 +356,8 @@ public class BoardController : NetworkBehaviour
         currentCardInfoIndex = index;//Для дальнейшего использования конкретной карты
 
         Card card = boardCardPositions[index].GetComponent<Card>();
-        Vector2 position = new Vector2(-750.0f, -90.0f);
+        //Vector2 position = new Vector2(-750.0f, -90.0f);//Подходит когда нет привязки к краю
+        Vector2 position = new Vector2(210.0f, 450.0f);
 
         GameObject cardInfo = TypeOfCountryPref(index);
         currentCardOpenInfo = Instantiate(cardInfo, objectCanvas);
@@ -431,13 +436,15 @@ public class BoardController : NetworkBehaviour
             case 0://Only view card owner for infrastructure
                 {
                     //Debug.Log("case 0");
-                    position = new Vector2(-742.0f, -315.0f);
+                    //position = new Vector2(-742.0f, -315.0f);
+                    position = new Vector2(218f, 225f);
                     break;
                 }
             case 1://View full panel for infrastructure
                 {
                     //Debug.Log("case 1");
-                    position = new Vector2(-742.0f, -395.0f);
+                    //position = new Vector2(-742.0f, -395.0f);
+                    position = new Vector2(218f, 145f);
 
                     ButtonsPanelCardInfo[0].gameObject.SetActive(false);
                     ButtonsPanelCardInfo[1].gameObject.SetActive(false);
@@ -449,13 +456,15 @@ public class BoardController : NetworkBehaviour
             case 2://Only view card owner for country
                 {
                     //Debug.Log("case 2");
-                    position = new Vector2(-742.0f, -335.0f);
+                    //position = new Vector2(-742.0f, -335.0f);
+                    position = new Vector2(218f, 205f);
                     break;
                 }
             case 3://View full panel for country
                 {
                     //Debug.Log("case 3");
-                    position = new Vector2(-742.0f, -415.0f);
+                    //position = new Vector2(-742.0f, -415.0f);
+                    position = new Vector2(218f, 125f);
                     GetAndSetButtonsForPanelInfo(index);
                     break;
                 }
@@ -556,28 +565,31 @@ public class BoardController : NetworkBehaviour
 
         if (cardCountry.GetPlayerOwner() == null)
         {
-            Debug.Log("Купить или выставить на аукцион");
+            //Debug.Log("Купить или выставить на аукцион");
             return 2;
         }
         else
         {
             if (cardCountry.GetPlayerOwner() == player)
             {
-                Debug.Log("Своя клетка");
+                //Debug.Log("Своя клетка");
             }
             else
             {
-                Debug.Log("Плачу ренту");
+                //Debug.Log("Плачу ренту");
                 int index = cardCountry.GetCardIndex();
                 player.PayRent(index, cardCountry);
             }
             return 3;
         }
     }
-    public void CurrentOwnerCard(int num)
+    public void CurrentOwnerCard(ulong clientId, int num)
     {
-        Card card = boardCardPositions[num].GetComponent<Card>();
-        Debug.Log("owner card " + num + " " + card.GetPlayerOwner());
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)clientId).ToString();
+        string res = $"Monopoly: {playerName} buy {GetCardCityName(num)}";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log("owner card " + num + " " + card.GetPlayerOwner());
     }
 
     private void DeleteCardInfo(ulong clientId)
@@ -646,6 +658,7 @@ public class BoardController : NetworkBehaviour
 
     public int ReturnPlayerPosition() => currentPlayerPosition.Value;
     public Card GetCardObject(int num) => boardCardPositions[num].GetComponent<Card>();
+    public CardSpecial GetCardSpecialObject(int num) => boardCardPositions[num].GetComponent<CardSpecial>();
     public Vector3 GetBoardPosition(int index) => boardCardPositions[index].transform.position;
     public int BoardCardCount() => boardCardPositions.Count;
     public bool GetPanelForCardInfoIsCreated()
@@ -780,7 +793,11 @@ public class BoardController : NetworkBehaviour
 
         ChangesInfoCardServerRpc(currentCardIndex, localId);
 
-        Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)localId).ToString();
+        string res = $"Monopoly: {playerName} upgrade {card.GetCityName()}, new rent price {card.HowManyRentToPayForCountryCard()}$";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log("Куплен дом на " + card.GetCityName() + " Цена ренты теперь " +  card.HowManyRentToPayForCountryCard());
     }
     private void PlayerDemoteCard()
     {
@@ -800,7 +817,11 @@ public class BoardController : NetworkBehaviour
 
         ChangesInfoCardServerRpc(currentCardIndex, localId);
 
-        Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
+        string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)localId).ToString();
+        string res = $"Monopoly: {playerName} demote {card.GetCityName()}, new rent price {card.HowManyRentToPayForCountryCard()}$";
+
+        ChatManager.Instance.SendMessageServerRpc(res, -1);
+        //Debug.Log("Продан дом на " + card.GetCityName() + " Цена ренты теперь " + card.HowManyRentToPayForCountryCard());
     }
 
     private void PlayerSellCard()
@@ -826,7 +847,11 @@ public class BoardController : NetworkBehaviour
             SetDefaultColorCardOnBoard(currentCardIndex);
             ChangesInfoCardServerRpc(currentCardIndex, localId);
 
-            Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
+            string playerName = MonopolyMultiplayer.Instance.GetPlayerNameFromPlayerId((int)localId).ToString();
+            string res = $"Monopoly: {playerName} sold {card.GetCityName()}";
+
+            ChatManager.Instance.SendMessageServerRpc(res, -1);
+            //Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
         }
         else
         {
@@ -943,7 +968,7 @@ public class BoardController : NetworkBehaviour
             SetDefaultColorCardOnBoard(cardIndex);
             ChangesInfoCardServerRpc(cardIndex, localId);
 
-            Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
+            //Debug.Log($"Продан {card.GetCityName()} в " + card.GetCountryName() + " Владелец тепер: " + card.GetPlayerOwner());
         }
         else
         {
